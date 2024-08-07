@@ -1,0 +1,46 @@
+//
+// Created by colin on 7/26/24.
+//
+
+#ifndef BITTYBOICPP_CPU_H
+#define BITTYBOICPP_CPU_H
+
+#include <cstdint>
+#include "ppu.h"
+#include "mmu.h"
+
+#define MEMSIZE 0xFFFF
+
+class cpu{
+
+public:
+    cpu()=default;
+    ~cpu()=default;
+
+    int run(mmu &mmu, ppu &ppu);
+    int tick(mmu &mmu, ppu &ppu);
+
+private:
+    uint8_t fetch_pc(mmu &mmu);
+    void prefix(mmu &mmu);
+
+    uint16_t sp = 0x0;
+    uint16_t pc = 0x0;
+
+    /* registers */
+    uint8_t acc = 0;
+    uint8_t flag_z = 0;
+    uint8_t flag_n = 0;
+    uint8_t flag_h = 0;
+    uint8_t flag_c = 0;
+    uint8_t b = 0; uint8_t c = 0;
+    uint8_t d = 0; uint8_t e = 0;
+    uint8_t h = 0; uint8_t l = 0;
+
+    uint8_t  pc_val = 0;
+    uint8_t  scratch8 = 0;
+    uint16_t scratch16 = 0;
+};
+
+
+#endif //BITTYBOICPP_CPU_H
