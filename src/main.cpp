@@ -13,7 +13,7 @@ uint8_t gb_screen_buffer[160 * 144] = {0};
 
 int main () {
     gameboy gb(gb_screen_buffer);
-    gb.load_rom("gbbootrom.gb");
+    gb.load_rom("tetris.gb");
 
 
     // test
@@ -102,6 +102,7 @@ int main () {
                         int shade = 255;
                         switch (gb_screen_buffer[x + 160*y]) {
                             case 0:
+                                shade = 255;
                                 break;
                             case 1:
                                 shade = 175;
@@ -111,6 +112,9 @@ int main () {
                                 break;
                             case 3:
                                 shade = 0;
+                                break;
+                            default:
+                                //printf("shouldn't happen %d\n", gb_screen_buffer[x + 160*y]);
                                 break;
                         }
                         SDL_SetRenderDrawColor(Renderer, shade, shade, shade, 255);
@@ -124,7 +128,7 @@ int main () {
             last_state_is_vblank = false;
         }
     }
-
+    return 1;
 
 
 

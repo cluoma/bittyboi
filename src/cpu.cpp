@@ -92,8 +92,13 @@ uint8_t INSTR_CLOCKS_BRANCH[] = {
     flag_c = CHECK_CARRY(X, -Y);\
     X -= Y;\
     flag_z = (X) == 0 ? 1 : 0
+#define ADDu8(X, Y) \
+    flag_h = CHECK_HALF_CARRY(X, Y);\
+    flag_c = CHECK_CARRY(X, Y);\
+    X += Y;\
+    flag_z = (X) == 0 ? 1 : 0
 
-#define NOT_IMPLEMENTED printf("%02x not implemented\n", pc_val); return(1);
+#define NOT_IMPLEMENTED printf("%02x not implemented\n", pc_val); return(-1);
 
 
 uint8_t cpu::fetch_pc(mmu &mmu) {
@@ -1135,9 +1140,9 @@ void cpu::prefix(mmu &mmu) {
 int cpu::tick(mmu &mmu, ppu &ppu) {
     int clocks = 0;
 
-    if (pc == 0x0055) {
-        mmu.dump_mem(0x8000, 26 * 16);
-    }
+//    if (pc == 0x0055) {
+//        mmu.dump_mem(0x8000, 26 * 16);
+//    }
 
     pc_val = fetch_pc(mmu);
 
@@ -1147,11 +1152,12 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
 
     clocks += INSTR_CLOCKS_BASE[pc_val];
     ppu.tick(INSTR_CLOCKS_BASE[pc_val], mmu);
-    //if (pc - 1 == 0xe9) printf("Done\n");
-    //printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
-    //printf("%d\n", flag_z);
+//    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
+//    printf("(%04x)->%02x (%04x)->%02x\n", HILO(h,l), mmu.read(HILO(h, l)), HILO(d,e), mmu.read(HILO(d, e)));
+//    printf("acc: %02x\n", acc);
     switch (pc_val) {
         case 0x00:
+            break;
         case 0x01:
         case 0x02:
         case 0x03:
@@ -1216,13 +1222,13 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x17:
             /* RLA */
-            printf("RLA\n");
-            printf("A: %08b \n", acc);
+            //printf("RLA\n");
+            //printf("A: %08b \n", acc);
             scratch8 = BIT7(acc);
             acc = (acc << 1) | flag_c;
             flag_c = scratch8;
             flag_z, flag_h, flag_n = 0;
-            printf("A: %08b flag_c: %01b\n", acc, flag_c);
+            //printf("A: %08b flag_c: %01b\n", acc, flag_c);
             break;
         case 0x18:
             /* JR i8 */
@@ -1264,9 +1270,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             h = fetch_pc(mmu);
             break;
         case 0x22:
-            if (pc == 0x00a4) {
-                printf("(HL): %04x A: %02x\n", HILO(h, l), acc);
-            }
+//            if (pc == 0x00a4) {
+//                printf("(HL): %04x A: %02x\n", HILO(h, l), acc);
+//            }
             /* LD (HL+), A */
             scratch16 = HILO(h, l);
             mmu.write(scratch16, acc);
@@ -1418,6 +1424,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             l = acc;
             break;
         case 0x78:
+            /* LD A,B */
+            acc = b;
+            break;
         case 0x79:
         case 0x7A:
         NOT_IMPLEMENTED
@@ -1430,6 +1439,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             acc = h;
             break;
         case 0x7D:
+            /* LD A,L */
+            acc = l;
+            break;
         case 0x7E:
         case 0x7F:
         case 0x80:
@@ -1438,7 +1450,12 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x83:
         case 0x84:
         case 0x85:
+            NOT_IMPLEMENTED
         case 0x86:
+            /* ADD A,(HL) */
+            scratch8 = mmu.read(HILO(h, l));
+            ADDu8(acc, scratch8);
+            break;
         case 0x87:
         case 0x88:
         case 0x89:
@@ -1448,30 +1465,30 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x8D:
         case 0x8E:
         case 0x8F:
-        NOT_IMPLEMENTED
+            NOT_IMPLEMENTED
         case 0x90:
             /* SUB A,B */
-        SUBu8(acc, b);
+            SUBu8(acc, b);
             break;
         case 0x91:
             /* SUB A,C */
-        SUBu8(acc, c);
+            SUBu8(acc, c);
             break;
         case 0x92:
             /* SUB A,D */
-        SUBu8(acc, d);
+            SUBu8(acc, d);
             break;
         case 0x93:
             /* SUB A,E */
-        SUBu8(acc, e);
+            SUBu8(acc, e);
             break;
         case 0x94:
             /* SUB A,H */
-        SUBu8(acc, h);
+            SUBu8(acc, h);
             break;
         case 0x95:
             /* SUB A,L */
-        SUBu8(acc, l);
+            SUBu8(acc, l);
             break;
         case 0x96:
             /* SUB A,C */
@@ -1480,7 +1497,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x97:
             /* SUB A,A */
-        SUBu8(acc, acc);
+            SUBu8(acc, acc);
             break;
         case 0x98:
         case 0x99:
@@ -1505,7 +1522,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0xAC:
         case 0xAD:
         case 0xAE:
-        NOT_IMPLEMENTED
+            NOT_IMPLEMENTED
         case 0xAF:
             acc = 0;
             flag_z = 1;
@@ -1528,7 +1545,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         NOT_IMPLEMENTED
         case 0xBE:
             /* CP A,(HL) */
-            acc = mmu.read(HILO(h, l));
+            scratch8 = mmu.read(HILO(h, l));
+            flag_z = acc == scratch8 ? 1 : 0;
+            flag_h = CHECK_HALF_CARRY(acc, -scratch8);
+            flag_c = CHECK_CARRY(acc, -scratch8);
+            flag_n = 1;
             break;
         case 0xBF:
         case 0xC0:
@@ -1567,7 +1588,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0xCC:
         NOT_IMPLEMENTED
         case 0xCD:
-            printf("CALL\n");
+            //printf("CALL\n");
             /* CALL u16 */
             // push pc of next instruction to sp
             mmu.write(--sp, HI(pc + 2));
@@ -1645,10 +1666,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0xFE:
             /* CP A,u8 */
             scratch8 = fetch_pc(mmu);
+            //printf("CP A,u8 -> %02x,%02x\n", acc, scratch8);
             flag_z = acc == scratch8 ? 1 : 0;
             //printf("acc %02x u8 %02x\n", acc, scratch8);
-            flag_h = CHECK_HALF_CARRY(acc, scratch8);
-            flag_c = CHECK_CARRY(acc, scratch8);
+            flag_h = CHECK_HALF_CARRY(acc, -scratch8);
+            flag_c = CHECK_CARRY(acc, -scratch8);
             flag_n = 1;
             break;
         case 0xFF:
