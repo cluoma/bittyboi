@@ -49,6 +49,13 @@ private:
 
     inline void INC_R8(uint8_t *x);
     inline void DEC_R8(uint8_t *x);
+    static inline void DEC_R16(uint8_t *upper, uint8_t *lower);
+
+    inline void CPL(uint8_t *x);
+
+    inline void OR_R8_U8(uint8_t *x, uint8_t y);
+    inline void AND_R8_U8(uint8_t *x, uint8_t y);
+    inline void XOR_R8_U8(uint8_t *x, uint8_t y);
 };
 
 
