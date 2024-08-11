@@ -105,7 +105,7 @@ E0 42   	LD ($FF00+$42),A	; $0089  scroll logo up if B=1
 05      	DEC B			; $008e  set B=0 first time
 20 4F   	JR NZ, Addr_00E0	; $008f    ... next time, cause jump to "Nintendo Logo check"
 
--> 16 20   	LD D,$20		; $0091  use scrolling loop to pause
+16 20   	LD D,$20		; $0091  use scrolling loop to pause
 18 CB      	JR Addr_0060	; $0093
 
 	; ==== Graphic routine ====

@@ -15,13 +15,11 @@ class cpu{
 
 public:
     cpu()=default;
-    ~cpu()=default;
 
-    int run(mmu &mmu, ppu &ppu);
     int tick(mmu &mmu, ppu &ppu);
 
 private:
-    uint8_t fetch_pc(mmu &mmu);
+    uint8_t fetch_pc(mmu &mmu); // fetch next byte from program counter, increment program counter
     void prefix(mmu &mmu);
 
     uint16_t sp = 0x0;
@@ -33,6 +31,7 @@ private:
     uint8_t flag_n = 0;
     uint8_t flag_h = 0;
     uint8_t flag_c = 0;
+    uint8_t flag_ime = 0;
     uint8_t b = 0; uint8_t c = 0;
     uint8_t d = 0; uint8_t e = 0;
     uint8_t h = 0; uint8_t l = 0;
@@ -40,6 +39,16 @@ private:
     uint8_t  pc_val = 0;
     uint8_t  scratch8 = 0;
     uint16_t scratch16 = 0;
+
+    inline void LD_R8_R8(uint8_t &x, uint8_t &y);
+    inline void LD_R8_U8(mmu &mmu, uint8_t *x);
+    inline void LD_R8_AR16(mmu &mmu, uint8_t *x, uint8_t upper, uint8_t lower);
+    inline void LD_R8_A16(mmu &mmu, uint8_t *x);
+    static inline void LD_A_HLP(mmu &mmu, uint8_t &acc, uint8_t &h, uint8_t &l);
+    static inline void LD_AR16_A(mmu &mmu, uint8_t &upper, uint8_t &lower, uint8_t &acc);
+
+    inline void INC_R8(uint8_t *x);
+    inline void DEC_R8(uint8_t *x);
 };
 
 

@@ -39,16 +39,16 @@ void ppu::fill_pixel_line(mmu &mmu, uint8_t scan_line) {
 
         for (int i = 0; i < 8; i++) {
             uint8_t bitmask = (uint8_t)1 << (7-i);
-            if (pixels + (scan_line*160) >= 160*144) {
-                printf("pixels: %d scanline: %d\n", pixels, scan_line);
-            }
+//            if (pixels + (scan_line*160) >= 160*144) {
+//                printf("pixels: %d scanline: %d\n", pixels, scan_line);
+//            }
 //            if ( (( (uint8_t)((data1 & bitmask) >> (7-i)) << 1 ) | ( (data0 & bitmask) >> (7-i) ) ) > 3) {
 //                printf("%08b\n", (( (uint8_t)((data1 & bitmask) >> (7-i)) << 1 ) | ( (data0 & bitmask) >> (7-i) ) ));
 //            }
             gb_screen_buffer[pixels + (scan_line*160)] = bg_palette_vals[( (uint8_t)((data1 & bitmask) >> (6-i)) ) | ( (data0 & bitmask) >> (7-i) )];
-            if (gb_screen_buffer[pixels + (scan_line*160)] > 3) {
-                printf("AAAAAAAAAA\n");
-            }
+//            if (gb_screen_buffer[pixels + (scan_line*160)] > 3) {
+//                printf("AAAAAAAAAA\n");
+//            }
             pixels++;
         }
         reads++;

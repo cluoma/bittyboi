@@ -23,10 +23,16 @@ uint8_t bootrom[] = {0x31,0xfe,0xff,0xaf,0x21,0xff,0x9f,0x32,0xcb,0x7c,0x20,0xfb
                      0xf5,0x06,0x19,0x78,0x86,0x23,0x05,0x20,0xfb,0x86,0x20,0xfe,0x3e,0x01,0xe0,0x50};
 
 uint8_t mmu::read(uint16_t addr) {
-    if (addr == 0x0104) {
-        printf("reading Nintendo logo: %02x\n", mem[addr]);
+//    if (addr == 0x0104) {
+//        printf("reading Nintendo logo: %02x\n", mem[addr]);
+//    }
+    if (mem[0xFF50] == 1) {
+        return mem[addr];
+    } else if (addr > 0x00FF) {
+        return mem[addr];
+    } else {
+        return bootrom[addr];
     }
-
     if (mem[0xFF50] != 1 && addr >= 0x0000 && addr <= 0x00FF) {
         return bootrom[addr];
     } else {

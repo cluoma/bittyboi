@@ -26,11 +26,6 @@ void gameboy::load_rom(const char * filename) {
     printf("loaded rom of size: %d\n", rom_size);
 }
 
-int gameboy::run() {
-    do {} while(_cpu.tick(_mmu, _ppu) != -1);
-    return 0;
-}
-
 int gameboy::tick() {
     return _cpu.tick(_mmu, _ppu);
 }

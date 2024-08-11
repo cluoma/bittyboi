@@ -13,21 +13,24 @@
 class gameboy {
 
 public:
-    explicit gameboy(uint8_t * screen_buffer) : _ppu(screen_buffer) {
-        gb_screen_buffer = screen_buffer;
+    explicit gameboy() : _ppu(gb_screen_buffer) {
     };
 
     void load_rom(const char * filename);
-    int run();
     int tick();
     bool is_vblank();
+
+    uint8_t * get_screen_buffer() {
+        return gb_screen_buffer;
+    }
 
 private:
     uint8_t rom[ROMSIZE] = {0};
     cpu _cpu;
     mmu _mmu;
     ppu _ppu;
-    uint8_t *gb_screen_buffer;
+
+    uint8_t gb_screen_buffer[160 * 144] = {0};
 };
 
 
