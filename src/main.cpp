@@ -10,6 +10,8 @@ int SCREEN_WIDTH = 160;
 int SCREEN_HEIGHT = 144;
 
 int main () {
+//    printf("%d\n", 0xFC);
+//    return 1;
 
 //    gameboy gb1;
 //    gb1.load_rom("tetris.gb");
@@ -47,6 +49,7 @@ int main () {
 
     gameboy gb;
     gb.load_rom("tetris.gb");
+//    gb.load_rom("cpu_instrs.gb");
 
     bool last_state_is_vblank = false;
     while (gb.tick() != -1) {

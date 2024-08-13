@@ -227,6 +227,12 @@ inline void cpu::RST(mmu &mmu, uint8_t x) {
     pc = x;
 }
 
+inline void cpu::RET(mmu &mmu) {
+    uint8_t lower = mmu.read(sp++);
+    uint8_t upper = mmu.read(sp++);
+    pc = HILO(upper, lower);
+}
+
 int cpu::tick(mmu &mmu, ppu &ppu) {
     int clocks = 0;
     pc_val = fetch_pc(mmu);
@@ -237,7 +243,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
 //        mmu.dump_mem(0x8000, 26 * 16);
 //    }
 
-//    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
+    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
 //    printf("(%04x)->%02x (%04x)->%02x\n", HILO(h,l), mmu.read(HILO(h, l)), HILO(d,e), mmu.read(HILO(d, e)));
 //    printf("acc: %02x\n", acc);
     switch (pc_val) {
@@ -624,6 +630,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_R8_R8(acc, l);
             break;
         case 0x7E:
+            /* LD A,(HL) */
+            LD_R8_AR16(mmu, &acc, h, l);
+            break;
         case 0x7F:
         NOT_IMPLEMENTED
         case 0x80:
@@ -859,6 +868,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             pc = HILO(fetch_pc(mmu), scratch8);
             break;
         case 0xC4:
+            /* CALL NZ,u16 */
         NOT_IMPLEMENTED
         case 0xC5:
             /* PUSH BC */
@@ -866,16 +876,29 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0xC6:
         case 0xC7:
-        case 0xC8:
         NOT_IMPLEMENTED
+        case 0xC8:
+            /* RET Z */
+            if (flag_z == 1) {
+                RET(mmu);
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            }
+            break;
         case 0xC9:
             /* RET */
-            pc = HILO(mmu.read(sp+1), mmu.read(sp));
-            sp += 2;
-            //printf("RET: %04x\n", pc);
+            RET(mmu);
             break;
         case 0xCA:
-        NOT_IMPLEMENTED
+            /* JP Z,u16 */
+            scratch8 = fetch_pc(mmu);
+            scratch16 = HILO(fetch_pc(mmu), scratch8);
+            if (flag_z == 1) {
+                pc = scratch16;
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            }
+            break;
         case 0xCB:
             prefix(mmu);
             clocks += 2;
@@ -967,6 +990,13 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             acc = mmu.read(0xFF00 + fetch_pc(mmu));
             break;
         case 0xF1:
+            /* POP AF */
+            POP_R16(mmu, &acc, &scratch8);
+            flag_c = BIT4(scratch8);
+            flag_h = BIT5(scratch8);
+            flag_n = BIT6(scratch8);
+            flag_z = BIT7(scratch8);
+            break;
         case 0xF2:
         NOT_IMPLEMENTED
         case 0xF3:

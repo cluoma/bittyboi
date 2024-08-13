@@ -65,6 +65,8 @@ private:
     inline void XOR_R8_U8(uint8_t *x, uint8_t y);
 
     inline void RST(mmu &mmu, uint8_t x);
+
+    inline void RET(mmu &mmu);
 };
 
 
