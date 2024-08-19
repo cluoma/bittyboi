@@ -16,6 +16,7 @@ public:
     explicit gameboy() : _ppu(gb_screen_buffer) {
     };
 
+    void init_no_bootrom();
     void load_rom(const char * filename);
     int tick();
     bool is_vblank();

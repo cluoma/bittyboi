@@ -17,6 +17,7 @@ public:
     cpu()=default;
 
     int tick(mmu &mmu, ppu &ppu);
+    void init_no_bootrom();
 
 private:
     uint8_t fetch_pc(mmu &mmu); // fetch next byte from program counter, increment program counter

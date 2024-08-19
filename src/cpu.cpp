@@ -56,7 +56,9 @@ uint8_t INSTR_CLOCKS_BRANCH[] = {
 
 // Use this before doing any operations to A
 #define CHECK_HALF_CARRY(A, B) (uint8_t)( ( ( ( ((uint8_t)A) & 0xF ) + ( ((uint8_t)B) & 0xF ) ) & 0x10 ) >> 4 )
+#define CHECK_HALF_CARRY_DEC(A, B) (uint8_t)( ( ( ( ((uint8_t)A) & 0xF ) - ( ((uint8_t)(B)) & 0xF ) ) & 0x10 ) >> 4 )
 #define CHECK_CARRY(A, B) (uint8_t)( ( (((uint16_t)A) & 0xFF) + (((uint16_t)B) & 0xFF) ) >> 8)
+#define CHECK_CARRY_DEC(A, B) A < B ? 1 : 0
 #define CHECK_ZERO(A) (A) == 0 ? 1 : 0
 
 #define BIT0(X) (((X) & 0b00000001))
@@ -77,25 +79,10 @@ uint8_t INSTR_CLOCKS_BRANCH[] = {
 #define BIT6_COMPLEMENT(X) (((~X) & 0b01000000) >> 6)
 #define BIT7_COMPLEMENT(X) (((~X) & 0b10000000) >> 7)
 
-#define INCu8(X) \
-    flag_h = CHECK_HALF_CARRY((X), 1);\
-    X ++;\
-    flag_n = 0;\
-    flag_z = (X) == 0 ? 1 : 0
-#define DECu8(X) \
-    flag_h = CHECK_HALF_CARRY((X), -1);\
-    X --;\
-    flag_n = 1;\
-    flag_z = (X) == 0 ? 1 : 0
 #define SUBu8(X, Y) \
-    flag_h = CHECK_HALF_CARRY(X, -Y);\
-    flag_c = CHECK_CARRY(X, -Y);\
+    flag_h = CHECK_HALF_CARRY_DEC(X, Y);\
+    flag_c = CHECK_CARRY_DEC(X, Y);\
     X -= Y;\
-    flag_z = (X) == 0 ? 1 : 0
-#define ADDu8(X, Y) \
-    flag_h = CHECK_HALF_CARRY(X, Y);\
-    flag_c = CHECK_CARRY(X, Y);\
-    X += Y;\
     flag_z = (X) == 0 ? 1 : 0
 
 #define NOT_IMPLEMENTED printf("%02x not implemented\n", pc_val); return(-1);
@@ -158,7 +145,7 @@ inline void cpu::INC_R8(uint8_t *x) {
     flag_z = (*x) == 0 ? 1 : 0;
 }
 inline void cpu::DEC_R8(uint8_t *x) {
-    flag_h = CHECK_HALF_CARRY((*x), -1);
+    flag_h = CHECK_HALF_CARRY_DEC((*x), 1);
     (*x)--;
     flag_n = 1;
     flag_z = (*x) == 0 ? 1 : 0;
@@ -195,8 +182,8 @@ inline void cpu::ADD_R16_U16(uint8_t *dest_upper, uint8_t *dest_lower, uint8_t u
     (*dest_lower) = LO(tmp_left);
 }
 inline void cpu::SUB_R8_U8(uint8_t *x, uint8_t y) {
-    flag_c = CHECK_CARRY((*x), -y);
-    flag_h = CHECK_HALF_CARRY((*x), -y);
+    flag_c = CHECK_CARRY_DEC((*x), y);
+    flag_h = CHECK_HALF_CARRY_DEC((*x), y);
     flag_n = 1;
     (*x) -= y;
     flag_z = (*x) == 0 ? 1 : 0;
@@ -290,6 +277,11 @@ inline void cpu::RLC(uint8_t *x) {
 }
 
 int cpu::tick(mmu &mmu, ppu &ppu) {
+    uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
+    printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
+           acc, f, b, c, d, e, h, l, sp, pc,
+           mmu.read(pc), mmu.read(pc+1), mmu.read(pc+2), mmu.read(pc+3));
+
     int clocks = 0;
     pc_val = fetch_pc(mmu);
     clocks += INSTR_CLOCKS_BASE[pc_val];
@@ -364,8 +356,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x0D:
             /* DEC C */
-            DEC_R8(&c);
-            break;
+            DEC_R8(&c); break;
         case 0x0E:
             /* LD C,u8 */
             LD_R8_U8(mmu, &c);
@@ -487,7 +478,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x29:
             /* ADD HL,HL */
-        NOT_IMPLEMENTED
+            ADD_R16_U16(&h, &l, h, l); break;
         case 0x2A:
             /* LD A,(HL+) */
             LD_A_HLP(mmu, acc, h, l);
@@ -552,7 +543,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         NOT_IMPLEMENTED
         case 0x3D:
             /* DEC A */
-            flag_h = CHECK_HALF_CARRY(acc, -1);
+            flag_h = CHECK_HALF_CARRY_DEC(acc, 1);
             acc --;
             flag_n = 1;
             flag_z = acc == 0 ? 1 : 0;
@@ -965,13 +956,19 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             /* CP A,(HL) */
             scratch8 = mmu.read(HILO(h, l));
             flag_z = acc == scratch8 ? 1 : 0;
-            flag_h = CHECK_HALF_CARRY(acc, -scratch8);
-            flag_c = CHECK_CARRY(acc, -scratch8);
+            flag_h = CHECK_HALF_CARRY_DEC(acc, scratch8);
+            flag_c = CHECK_CARRY_DEC(acc, scratch8);
             flag_n = 1;
             break;
         case 0xBF:
         case 0xC0:
-        NOT_IMPLEMENTED
+            /* RET NZ */
+            if (flag_z == 0) {
+                RET(mmu);
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            }
+            break;
         case 0xC1:
             /* POP BC */
             c = mmu.read(sp++);
@@ -1173,11 +1170,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0xFE:
             /* CP A,u8 */
             scratch8 = fetch_pc(mmu);
-            //printf("CP A,u8 -> %02x,%02x\n", acc, scratch8);
             flag_z = acc == scratch8 ? 1 : 0;
-            //printf("acc %02x u8 %02x\n", acc, scratch8);
-            flag_h = CHECK_HALF_CARRY(acc, -scratch8);
-            flag_c = CHECK_CARRY(acc, -scratch8);
+            flag_h = CHECK_HALF_CARRY_DEC(acc, scratch8);
+            flag_c = CHECK_CARRY_DEC(acc, scratch8);
             flag_n = 1;
             break;
         case 0xFF:
@@ -1714,4 +1709,17 @@ void cpu::prefix(mmu &mmu) {
         case 0xFF:
             break;
     }
+}
+
+void cpu::init_no_bootrom() {
+    acc = 0x01;
+    flag_c = 1; flag_h = 1; flag_z = 1;
+    b = 0x00;
+    c = 0x13;
+    d = 0x00;
+    e = 0xD8;
+    h = 0x01;
+    l = 0x4D;
+    sp = 0xFFFE;
+    pc = 0x0100;
 }

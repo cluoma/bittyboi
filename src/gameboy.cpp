@@ -23,7 +23,11 @@ void gameboy::load_rom(const char * filename) {
     {
         _mmu.write(i, rom[i]);
     }
-    printf("loaded rom of size: %d\n", rom_size);
+    //printf("loaded rom of size: %d\n", rom_size);
+}
+
+void gameboy::init_no_bootrom() {
+    _cpu.init_no_bootrom();
 }
 
 int gameboy::tick() {

@@ -26,6 +26,10 @@ uint8_t mmu::read(uint16_t addr) {
 //    if (addr == 0x0104) {
 //        printf("reading Nintendo logo: %02x\n", mem[addr]);
 //    }
+    if (addr == 0xFF44) {
+        return 0x90;
+    }
+
     if (mem[0xFF50] == 1) {
         return mem[addr];
     } else if (addr > 0x00FF) {

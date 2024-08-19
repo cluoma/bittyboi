@@ -9,7 +9,20 @@
 int SCREEN_WIDTH = 160;
 int SCREEN_HEIGHT = 144;
 
+
 int main () {
+
+//    uint8_t t = 0x90;
+//    uint8_t q = -0x90;
+//    printf("q: %02x\n", q);
+//    uint16_t r = 0x90 + 0x70;
+//    printf("r: %04x\n", r);
+//    uint8_t c = CHECK_CARRY(t, -0x90);
+//    printf("C: %u\n", c);
+//    c = CHECK_CARRY_DEC(t, -0x90);
+//    printf("C: %u\n", c);
+//    return 1;
+
 //    printf("%d\n", 0xFC);
 //    return 1;
 
@@ -48,8 +61,10 @@ int main () {
 
 
     gameboy gb;
-    gb.load_rom("tetris.gb");
+//    gb.load_rom("tetris.gb");
 //    gb.load_rom("cpu_instrs.gb");
+    gb.load_rom("01-special.gb");
+    gb.init_no_bootrom();
 
     bool last_state_is_vblank = false;
     while (gb.tick() != -1) {
