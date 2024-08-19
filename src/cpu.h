@@ -89,6 +89,9 @@ private:
     inline void SWAP(uint8_t *x);
     inline void CB_FUNC_ADDR(mmu &mmu, uint16_t addr, void(cpu::*cb_func)(uint8_t*));
 
+    inline void BIT(uint8_t x, uint8_t bit);
+    inline void BIT_addr(mmu &mmu, uint16_t addr, uint8_t bit);
+
 };
 
 

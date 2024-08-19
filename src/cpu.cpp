@@ -345,6 +345,19 @@ inline void cpu::CB_FUNC_ADDR(mmu &mmu, uint16_t addr, void(cpu::*cb_func)(uint8
     mmu.write(addr, x);
 }
 
+inline void cpu::BIT(uint8_t x, uint8_t bit) {
+    // bit should be between 0 and 7
+    flag_z = ((~x) >> bit) & 0x1 ;
+    flag_h = 1;
+    flag_n = 0;
+}
+inline void cpu::BIT_addr(mmu &mmu, uint16_t addr, uint8_t bit) {
+    // bit should be between 0 and 7
+    uint8_t x = mmu.read(addr);
+    BIT(x, bit);
+    mmu.write(addr, x);
+}
+
 int cpu::tick(mmu &mmu, ppu &ppu) {
     uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
     printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
@@ -1446,137 +1459,196 @@ void cpu::prefix(mmu &mmu) {
             SRL(&acc); break;
         case 0x40:
             /* BIT 0,B */
-
-            break;
+            BIT(b, 0); break;
         case 0x41:
-            break;
+            /* BIT 0,C */
+            BIT(c, 0); break;
         case 0x42:
-            break;
+            /* BIT 0,D */
+            BIT(d, 0); break;
         case 0x43:
-            break;
+            /* BIT 0,E */
+            BIT(e, 0); break;
         case 0x44:
-            break;
+            /* BIT 0,H */
+            BIT(h, 0); break;
         case 0x45:
-            break;
+            /* BIT 0,L */
+            BIT(l, 0); break;
         case 0x46:
-            break;
+            /* BIT 0,(HL) */
+            BIT_addr(mmu, HILO(h, l), 0); break;
         case 0x47:
-            break;
+            /* BIT 0,A */
+            BIT(acc, 0); break;
         case 0x48:
-            break;
+            /* BIT 1,B */
+            BIT(b, 1); break;
         case 0x49:
-            break;
+            /* BIT 1,C */
+            BIT(c, 1); break;
         case 0x4A:
-            break;
+            /* BIT 1,D */
+            BIT(d, 1); break;
         case 0x4B:
-            break;
+            /* BIT 1,E */
+            BIT(e, 1); break;
         case 0x4C:
-            break;
+            /* BIT 1,H */
+            BIT(h, 1); break;
         case 0x4D:
-            break;
+            /* BIT 1,L */
+            BIT(l, 1); break;
         case 0x4E:
-            break;
+            /* BIT 1,(HL) */
+            BIT_addr(mmu, HILO(h, l), 1); break;
         case 0x4F:
-            break;
+            /* BIT 1,A */
+            BIT(acc, 1); break;
         case 0x50:
-            break;
+            /* BIT 2,B */
+            BIT(b, 2); break;
         case 0x51:
-            break;
+            /* BIT 2,C */
+            BIT(c, 2); break;
         case 0x52:
-            break;
+            /* BIT 2,D */
+            BIT(d, 2); break;
         case 0x53:
-            break;
+            /* BIT 2,E */
+            BIT(e, 2); break;
         case 0x54:
-            break;
+            /* BIT 2,H */
+            BIT(h, 2); break;
         case 0x55:
-            break;
+            /* BIT 2,L */
+            BIT(l, 2); break;
         case 0x56:
-            break;
+            /* BIT 2,(HL) */
+            BIT_addr(mmu, HILO(h, l), 2); break;
         case 0x57:
-            break;
+            /* BIT 2,A */
+            BIT(acc, 2); break;
         case 0x58:
-            break;
+            /* BIT 3,B */
+            BIT(b, 3); break;
         case 0x59:
-            break;
+            /* BIT 3,C */
+            BIT(c, 3); break;
         case 0x5A:
-            break;
+            /* BIT 3,D */
+            BIT(d, 3); break;
         case 0x5B:
-            break;
+            /* BIT 3,E */
+            BIT(e, 3); break;
         case 0x5C:
-            break;
+            /* BIT 3,H */
+            BIT(h, 3); break;
         case 0x5D:
-            break;
+            /* BIT 3,L */
+            BIT(l, 3); break;
         case 0x5E:
-            break;
+            /* BIT 3,(HL) */
+            BIT_addr(mmu, HILO(h, l), 3); break;
         case 0x5F:
-            break;
+            /* BIT 3,A */
+            BIT(acc, 3); break;
         case 0x60:
-            break;
+            /* BIT 4,B */
+            BIT(b, 4); break;
         case 0x61:
-            break;
+            /* BIT 4,C */
+            BIT(c, 4); break;
         case 0x62:
-            break;
+            /* BIT 4,D */
+            BIT(d, 4); break;
         case 0x63:
-            break;
+            /* BIT 4,E */
+            BIT(e, 4); break;
         case 0x64:
-            break;
+            /* BIT 4,H */
+            BIT(h, 4); break;
         case 0x65:
-            break;
+            /* BIT 4,L */
+            BIT(l, 4); break;
         case 0x66:
-            break;
+            /* BIT 4,(HL) */
+            BIT_addr(mmu, HILO(h, l), 4); break;
         case 0x67:
-            break;
+            /* BIT 4,A */
+            BIT(acc, 4); break;
         case 0x68:
-            break;
+            /* BIT 5,B */
+            BIT(b, 5); break;
         case 0x69:
-            break;
+            /* BIT 5,C */
+            BIT(c, 5); break;
         case 0x6A:
-            break;
+            /* BIT 5,D */
+            BIT(d, 5); break;
         case 0x6B:
-            break;
+            /* BIT 5,E */
+            BIT(e, 5); break;
         case 0x6C:
-            break;
+            /* BIT 5,H */
+            BIT(h, 5); break;
         case 0x6D:
-            break;
+            /* BIT 5,L */
+            BIT(l, 5); break;
         case 0x6E:
-            break;
+            /* BIT 5,(HL) */
+            BIT_addr(mmu, HILO(h, l), 5); break;
         case 0x6F:
-            break;
+            /* BIT 5,A */
+            BIT(acc, 5); break;
         case 0x70:
-            break;
+            /* BIT 6,B */
+            BIT(b, 6); break;
         case 0x71:
-            break;
+            /* BIT 6,C */
+            BIT(c, 6); break;
         case 0x72:
-            break;
+            /* BIT 6,D */
+            BIT(d, 6); break;
         case 0x73:
-            break;
+            /* BIT 6,E */
+            BIT(e, 6); break;
         case 0x74:
-            break;
+            /* BIT 6,H */
+            BIT(h, 6); break;
         case 0x75:
-            break;
+            /* BIT 6,L */
+            BIT(l, 6); break;
         case 0x76:
-            break;
+            /* BIT 6,(HL) */
+            BIT_addr(mmu, HILO(h, l), 6); break;
         case 0x77:
-            break;
+            /* BIT 6,A */
+            BIT(acc, 6); break;
         case 0x78:
-            break;
+            /* BIT 7,B */
+            BIT(b, 7); break;
         case 0x79:
-            break;
+            /* BIT 7,C */
+            BIT(c, 7); break;
         case 0x7A:
-            break;
+            /* BIT 7,D */
+            BIT(d, 7); break;
         case 0x7B:
-            break;
+            /* BIT 7,E */
+            BIT(e, 7); break;
         case 0x7C:
-            flag_z = BIT7_COMPLEMENT(h);
-            flag_h = 1;
-            flag_n = 0;
-            break;
+            /* BIT 7,H */
+            BIT(h, 7); break;
         case 0x7D:
-            break;
+            /* BIT 7,L */
+            BIT(l, 7); break;
         case 0x7E:
-            break;
+            /* BIT 7,(HL) */
+            BIT_addr(mmu, HILO(h, l), 7); break;
         case 0x7F:
-            break;
+            /* BIT 7,A */
+            BIT(acc, 7); break;
         case 0x80:
             break;
         case 0x81:
