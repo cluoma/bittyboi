@@ -239,6 +239,11 @@ inline void cpu::RR(uint8_t *x) {
     flag_n = 0;
     flag_z = 0;
 }
+inline void cpu::RR_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    RR(&x);
+    mmu.write(addr, x);
+}
 inline void cpu::RRC(uint8_t *x) {
     if (*x & 0x1) {
         *x = ((*x) >> 1) | 0b10000000;
@@ -250,6 +255,11 @@ inline void cpu::RRC(uint8_t *x) {
     flag_h = 0;
     flag_n = 0;
     flag_z = 0;
+}
+inline void cpu::RRC_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    RRC(&x);
+    mmu.write(addr, x);
 }
 inline void cpu::RL(uint8_t *x) {
     if (*x & 0b10000000) {
@@ -263,6 +273,11 @@ inline void cpu::RL(uint8_t *x) {
     flag_n = 0;
     flag_z = 0;
 }
+inline void cpu::RL_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    RL(&x);
+    mmu.write(addr, x);
+}
 inline void cpu::RLC(uint8_t *x) {
     if (*x & 0b10000000) {
         *x = ((*x) << 1) | 0x1;
@@ -274,6 +289,42 @@ inline void cpu::RLC(uint8_t *x) {
     flag_h = 0;
     flag_n = 0;
     flag_z = 0;
+}
+inline void cpu::RLC_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    RLC(&x);
+    mmu.write(addr, x);
+}
+inline void cpu::SLA(uint8_t *x) {
+    // bit 7 into carry
+    flag_c = *x & 0b10000000 ? 1 : 0;
+    // bit 0 is reset to 0
+    (*x) <<= 1;
+    flag_z = (*x) == 0 ? 1 : 0;
+    flag_h = 0;
+    flag_n = 0;
+}
+inline void cpu::SLA_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    SLA(&x);
+    mmu.write(addr, x);
+}
+inline void cpu::SRA(uint8_t *x) {
+    // bit 0 into carry
+    flag_c = *x & 0x1 ? 1 : 0;
+    (*x) >>= 1;
+    // bit 7 should be unchanged
+    if (*x & 0b01000000) {
+        *x = (*x) | 0b10000000;
+    }
+    flag_z = (*x) == 0 ? 1 : 0;
+    flag_h = 0;
+    flag_n = 0;
+}
+inline void cpu::SRA_addr(mmu &mmu, uint16_t addr) {
+    uint8_t x = mmu.read(addr);
+    SRA(&x);
+    mmu.write(addr, x);
 }
 
 int cpu::tick(mmu &mmu, ppu &ppu) {
@@ -1185,109 +1236,150 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
 void cpu::prefix(mmu &mmu) {
     switch (fetch_pc(mmu)) {
         case 0x00:
-            break;
+            /* RLC B */
+            RLC(&b); break;
         case 0x01:
-            break;
+            /* RLC C */
+            RLC(&c); break;
         case 0x02:
-            break;
+            /* RLC D */
+            RLC(&d); break;
         case 0x03:
-            break;
+            /* RLC E */
+            RLC(&e); break;
         case 0x04:
-            break;
+            /* RLC H */
+            RLC(&h); break;
         case 0x05:
-            break;
+            /* RLC L */
+            RLC(&l); break;
         case 0x06:
-            break;
+            /* RLC (HL) */
+            RLC_addr(mmu, HILO(h, l)); break;
         case 0x07:
-            break;
+            /* RLC A */
+            RLC(&acc); break;
         case 0x08:
-            break;
+            /* RRC B */
+            RRC(&b); break;
         case 0x09:
-            break;
+            /* RRC C */
+            RRC(&c); break;
         case 0x0A:
-            break;
+            /* RRC D */
+            RRC(&d); break;
         case 0x0B:
-            break;
+            /* RRC E */
+            RRC(&e); break;
         case 0x0C:
-            break;
+            /* RRC H */
+            RRC(&h); break;
         case 0x0D:
-            break;
+            /* RRC L */
+            RRC(&l); break;
         case 0x0E:
-            break;
+            /* RRC (HL) */
+            RRC_addr(mmu, HILO(h, l)); break;
         case 0x0F:
-            break;
+            /* RRC A */
+            RRC(&acc); break;
         case 0x10:
-            break;
+            /* RL B */
+            RL(&b); break;
         case 0x11:
             /* RL C */
-            scratch8 = BIT7(c);
-            c = (c << 1) | flag_c;
-            flag_z = c == 0 ? 1 : 0;
-            flag_c = scratch8;
-            flag_n = 0;
-            flag_h = 0;
-            break;
+            RL(&c); break;
         case 0x12:
-            break;
+            /* RL D */
+            RL(&d); break;
         case 0x13:
-            break;
+            /* RL E */
+            RL(&e); break;
         case 0x14:
-            break;
+            /* RL H */
+            RL(&h); break;
         case 0x15:
-            break;
+            RL(&l); break;
         case 0x16:
-            break;
+            /* RL (HL) */
+            RL_addr(mmu, HILO(h, l)); break;
         case 0x17:
-            break;
+            /* RL A */
+            RL(&acc); break;
         case 0x18:
-            break;
+            /* RR B */
+            RR(&b); break;
         case 0x19:
-            break;
+            /* RR C */
+            RR(&c); break;
         case 0x1A:
-            break;
+            /* RR D */
+            RR(&d); break;
         case 0x1B:
-            break;
+            /* RR E */
+            RR(&e); break;
         case 0x1C:
-            break;
+            /* RR H */
+            RR(&h); break;
         case 0x1D:
-            break;
+            /* RR L */
+            RR(&l); break;
         case 0x1E:
-            break;
+            /* RR (HL) */
+            RR_addr(mmu, HILO(h, l)); break;
         case 0x1F:
-            break;
+            /* RR A */
+            RR(&acc); break;
         case 0x20:
-            break;
+            /* SLA B */
+            SLA(&b); break;
         case 0x21:
-            break;
+            /* SLA C */
+            SLA(&c); break;
         case 0x22:
-            break;
+            /* SLA D */
+            SLA(&d); break;
         case 0x23:
-            break;
+            /* SLA E */
+            SLA(&e); break;
         case 0x24:
-            break;
+            /* SLA H */
+            SLA(&h); break;
         case 0x25:
-            break;
+            /* SLA L */
+            SLA(&l); break;
         case 0x26:
-            break;
+            /* SLA (HL) */
+            SLA_addr(mmu, HILO(h, l)); break;
         case 0x27:
-            break;
+            /* SLA A */
+            SLA(&acc); break;
         case 0x28:
-            break;
+            /* SRA B */
+            SRA(&b); break;
         case 0x29:
-            break;
+            /* SRA C */
+            SRA(&c); break;
         case 0x2A:
-            break;
+            /* SRA D */
+            SRA(&d); break;
         case 0x2B:
-            break;
+            /* SRA E */
+            SRA(&e); break;
         case 0x2C:
-            break;
+            /* SRA H */
+            SRA(&h); break;
         case 0x2D:
-            break;
+            /* SRA L */
+            SRA(&l); break;
         case 0x2E:
-            break;
+            /* SRA (HL) */
+            SRA_addr(mmu, HILO(h, l)); break;
         case 0x2F:
-            break;
+            /* SRA A */
+            SRA(&acc); break;
         case 0x30:
+            /* SWAP B */
             break;
         case 0x31:
             break;

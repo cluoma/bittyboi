@@ -73,9 +73,18 @@ private:
 
 
     inline void RR(uint8_t *x);
+    inline void RR_addr(mmu &mmu, uint16_t addr);
     inline void RRC(uint8_t *x);
+    inline void RRC_addr(mmu &mmu, uint16_t addr);
     inline void RL(uint8_t *x);
+    inline void RL_addr(mmu &mmu, uint16_t addr);
     inline void RLC(uint8_t *x);
+    inline void RLC_addr(mmu &mmu, uint16_t addr);
+
+    inline void SLA(uint8_t *x);
+    inline void SLA_addr(mmu &mmu, uint16_t addr);
+    inline void SRA(uint8_t *x);
+    inline void SRA_addr(mmu &mmu, uint16_t addr);
 };
 
 
