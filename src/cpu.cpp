@@ -3,6 +3,7 @@
 //
 
 #include <cstdio>
+#include <functional>
 #include "cpu.h"
 
 // these are the lowest clock counts for each instruction
@@ -321,9 +322,26 @@ inline void cpu::SRA(uint8_t *x) {
     flag_h = 0;
     flag_n = 0;
 }
-inline void cpu::SRA_addr(mmu &mmu, uint16_t addr) {
+inline void cpu::SRL(uint8_t * x) {
+    // bit 0 into carry
+    flag_c = *x & 0x1 ? 1 : 0;
+    (*x) >>= 1;
+    flag_z = (*x) == 0 ? 1 : 0;
+    flag_h = 0;
+    flag_n = 0;
+}
+
+inline void cpu::SWAP(uint8_t *x) {
+    (*x) = ((*x) >> 4) | ((*x) & 0x0F);
+    flag_z = (*x) == 0 ? 1 : 0;
+    flag_c = 0;
+    flag_h = 0;
+    flag_n = 0;
+}
+
+inline void cpu::CB_FUNC_ADDR(mmu &mmu, uint16_t addr, void(cpu::*cb_func)(uint8_t*)) {
     uint8_t x = mmu.read(addr);
-    SRA(&x);
+    (this->*cb_func)(&x);
     mmu.write(addr, x);
 }
 
@@ -1374,44 +1392,61 @@ void cpu::prefix(mmu &mmu) {
             SRA(&l); break;
         case 0x2E:
             /* SRA (HL) */
-            SRA_addr(mmu, HILO(h, l)); break;
+            CB_FUNC_ADDR(mmu, HILO(h, l), &cpu::SRA); break;
         case 0x2F:
             /* SRA A */
             SRA(&acc); break;
         case 0x30:
             /* SWAP B */
-            break;
+            SWAP(&b); break;
         case 0x31:
-            break;
+            /* SWAP C */
+            SWAP(&c); break;
         case 0x32:
-            break;
+            /* SWAP D */
+            SWAP(&d); break;
         case 0x33:
-            break;
+            /* SWAP E */
+            SWAP(&e); break;
         case 0x34:
-            break;
+            /* SWAP H */
+            SWAP(&h); break;
         case 0x35:
-            break;
+            /* SWAP L */
+            SWAP(&l); break;
         case 0x36:
-            break;
+            /* SWAP (HL) */
+            CB_FUNC_ADDR(mmu, HILO(h, l), &cpu::SWAP); break;
         case 0x37:
-            break;
+            /* SWAP A */
+            SWAP(&acc); break;
         case 0x38:
-            break;
+            /* SRL B */
+            SRL(&b); break;
         case 0x39:
-            break;
+            /* SRL C */
+            SRL(&c); break;
         case 0x3A:
-            break;
+            /* SRL D */
+            SRL(&d); break;
         case 0x3B:
-            break;
+            /* SRL E */
+            SRL(&e); break;
         case 0x3C:
-            break;
+            /* SRL H */
+            SRL(&h); break;
         case 0x3D:
-            break;
+            /* SRL L */
+            SRL(&l); break;
         case 0x3E:
-            break;
+            /* SRL (HL) */
+            CB_FUNC_ADDR(mmu, HILO(h, l), &cpu::SRL); break;
         case 0x3F:
-            break;
+            /* SRL A */
+            SRL(&acc); break;
         case 0x40:
+            /* BIT 0,B */
+
             break;
         case 0x41:
             break;

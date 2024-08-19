@@ -84,7 +84,11 @@ private:
     inline void SLA(uint8_t *x);
     inline void SLA_addr(mmu &mmu, uint16_t addr);
     inline void SRA(uint8_t *x);
-    inline void SRA_addr(mmu &mmu, uint16_t addr);
+    inline void SRL(uint8_t *x);
+
+    inline void SWAP(uint8_t *x);
+    inline void CB_FUNC_ADDR(mmu &mmu, uint16_t addr, void(cpu::*cb_func)(uint8_t*));
+
 };
 
 
