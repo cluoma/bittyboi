@@ -194,6 +194,13 @@ inline void cpu::ADD_R16_U16(uint8_t *dest_upper, uint8_t *dest_lower, uint8_t u
     (*dest_upper) = HI(tmp_left);
     (*dest_lower) = LO(tmp_left);
 }
+inline void cpu::SUB_R8_U8(uint8_t *x, uint8_t y) {
+    flag_c = CHECK_CARRY((*x), -y);
+    flag_h = CHECK_HALF_CARRY((*x), -y);
+    flag_n = 1;
+    (*x) -= y;
+    flag_z = (*x) == 0 ? 1 : 0;
+}
 inline void cpu::OR_R8_U8(uint8_t *x, uint8_t y) {
     /* Logical OR on x and y, store contents in x */
     (*x) = (*x) | y;
@@ -233,6 +240,55 @@ inline void cpu::RET(mmu &mmu) {
     pc = HILO(upper, lower);
 }
 
+inline void cpu::RR(uint8_t *x) {
+    if (*x & 0x1) {
+        *x = ((*x) >> 1) | ((flag_c  << 7) & 0b10000000);
+        flag_c = 1;
+    } else {
+        *x = ((*x) >> 1) | ((flag_c  << 7) & 0b10000000);
+        flag_c = 0;
+    }
+    flag_h = 0;
+    flag_n = 0;
+    flag_z = 0;
+}
+inline void cpu::RRC(uint8_t *x) {
+    if (*x & 0x1) {
+        *x = ((*x) >> 1) | 0b10000000;
+        flag_c = 1;
+    } else {
+        *x = ((*x) >> 1);
+        flag_c = 0;
+    }
+    flag_h = 0;
+    flag_n = 0;
+    flag_z = 0;
+}
+inline void cpu::RL(uint8_t *x) {
+    if (*x & 0b10000000) {
+        *x = ((*x) << 1) | (flag_c & 0x1);
+        flag_c = 1;
+    } else {
+        *x = ((*x) << 1) | (flag_c & 0x1);
+        flag_c = 0;
+    }
+    flag_h = 0;
+    flag_n = 0;
+    flag_z = 0;
+}
+inline void cpu::RLC(uint8_t *x) {
+    if (*x & 0b10000000) {
+        *x = ((*x) << 1) | 0x1;
+        flag_c = 1;
+    } else {
+        *x = ((*x) << 1);
+        flag_c = 0;
+    }
+    flag_h = 0;
+    flag_n = 0;
+    flag_z = 0;
+}
+
 int cpu::tick(mmu &mmu, ppu &ppu) {
     int clocks = 0;
     pc_val = fetch_pc(mmu);
@@ -243,7 +299,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
 //        mmu.dump_mem(0x8000, 26 * 16);
 //    }
 
-    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
+//    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
 //    printf("(%04x)->%02x (%04x)->%02x\n", HILO(h,l), mmu.read(HILO(h, l)), HILO(d,e), mmu.read(HILO(d, e)));
 //    printf("acc: %02x\n", acc);
     switch (pc_val) {
@@ -295,11 +351,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x09:
             /* ADD HL,BC */
         case 0x0A:
-        NOT_IMPLEMENTED
+            /* LD A,(BC) */
+            LD_R8_AR16(mmu, &acc, b, c); break;
         case 0x0B:
             /* DEC BC */
-            DEC_R16(&b, &c);
-            break;
+            DEC_R16(&b, &c); break;
         case 0x0C:
             flag_h = CHECK_HALF_CARRY(c, 1);
             c ++;
@@ -315,7 +371,8 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_R8_U8(mmu, &c);
             break;
         case 0x0F:
-        NOT_IMPLEMENTED
+            /* RRCA */
+            RRC(&acc); break;
         case 0x10:
             return -1;
         case 0x11:
@@ -334,33 +391,23 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             e = LO(scratch16+1);
             break;
         case 0x14:
-        NOT_IMPLEMENTED
+            /* INC D */
+            INC_R8(&d); break;
         case 0x15:
             /* DEC D */
-            DEC_R8(&d);
-            break;
+            DEC_R8(&d); break;
         case 0x16:
             /* LD D,u8 */
-            LD_R8_U8(mmu, &d);
-            break;
+            LD_R8_U8(mmu, &d); break;
         case 0x17:
             /* RLA */
-            scratch8 = BIT7(acc);
-            acc = (acc << 1) | flag_c;
-            flag_c = scratch8;
-            flag_z = 0;
-            flag_h = 0;
-            flag_n = 0;
-            break;
+            RL(&acc); break;
         case 0x18:
             /* JR i8 */
-            scratch8 = fetch_pc(mmu);
-            pc += (int8_t) scratch8;
-            break;
+            pc += (int8_t) fetch_pc(mmu); break;
         case 0x19:
             /* ADD HL,DE */
-            ADD_R16_U16(&h, &l, d, e);
-            break;
+            ADD_R16_U16(&h, &l, d, e); break;
         case 0x1A:
             /* LD A,(DE) */
             LD_R8_AR16(mmu, &acc, d, e);
@@ -382,7 +429,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_R8_U8(mmu, &e);
             break;
         case 0x1F:
-        NOT_IMPLEMENTED
+            /* RRA */
+            RR(&acc);
+            break;
         case 0x20:
             /* JR NZ, s8 */
             if (flag_z == 0) {
@@ -416,8 +465,15 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             INC_R8(&h);
             break;
         case 0x25:
+            /* DEC H */
+            DEC_R8(&h);
+            break;
         case 0x26:
+            /* LD H,u8 */
+            LD_R8_U8(mmu, &h);
+            break;
         case 0x27:
+            /* DAA */
         NOT_IMPLEMENTED
         case 0x28:
             /* JR Z, s8 */
@@ -430,15 +486,22 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 pc++;
             break;
         case 0x29:
+            /* ADD HL,HL */
         NOT_IMPLEMENTED
         case 0x2A:
             /* LD A,(HL+) */
             LD_A_HLP(mmu, acc, h, l);
             break;
         case 0x2B:
-        case 0x2C:
-        case 0x2D:
         NOT_IMPLEMENTED
+        case 0x2C:
+            /* INC L */
+            INC_R8(&l);
+            break;
+        case 0x2D:
+            /* DEC L */
+            DEC_R8(&l);
+            break;
         case 0x2E:
             /* LD L,u8 */
             LD_R8_U8(mmu, &l);
@@ -448,7 +511,15 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             CPL(&acc);
             break;
         case 0x30:
-        NOT_IMPLEMENTED
+            /* JR NC,i8 */
+            if (flag_c == 0) {
+                pc += (int8_t) fetch_pc(mmu);
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            } else {
+                pc++;
+            }
+            break;
         case 0x31:
             sp = HILO(mmu.read(pc + 1), mmu.read(pc));
             pc += 2;
@@ -463,7 +534,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x33:
         case 0x34:
         case 0x35:
-        NOT_IMPLEMENTED
+            /* DEC (HL) */
+            scratch8 = mmu.read(HILO(h, l));
+            DEC_R8(&scratch8);
+            mmu.write(HILO(h, l), scratch8);
+            break;
         case 0x36:
             /* LD (HL),u8 */
             mmu.write(HILO(h, l), fetch_pc(mmu));
@@ -493,8 +568,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x43:
         case 0x44:
         case 0x45:
+        NOT_IMPLEMENTED
         case 0x46:
-            NOT_IMPLEMENTED
+            /* LD B,(HL) */
+            LD_R8_AR16(mmu, &b, h, l);
+            break;
         case 0x47:
             /* LD B,A */
             LD_R8_R8(b, acc);
@@ -505,8 +583,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x4B:
         case 0x4C:
         case 0x4D:
-        case 0x4E:
         NOT_IMPLEMENTED
+        case 0x4E:
+            /* LD C,(HL) */
+            LD_R8_AR16(mmu, &c, h, l);
+            break;
         case 0x4F:
             /* LD C,A */
             LD_R8_R8(c, acc);
@@ -576,65 +657,101 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_R8_R8(e, acc);
             break;
         case 0x60:
+            /* LD H,B */
+            LD_R8_R8(h, b); break;
         case 0x61:
+            /* LD H,C */
+            LD_R8_R8(h, c); break;
         case 0x62:
+            /* LD H,D */
+            LD_R8_R8(h, d); break;
         case 0x63:
+            /* LD H,E */
+            LD_R8_R8(h, e); break;
         case 0x64:
+            /* LD H,H */
+            LD_R8_R8(h, h); break;
         case 0x65:
+            /* LD H,L */
+            LD_R8_R8(h, l); break;
         case 0x66:
-        NOT_IMPLEMENTED
+            /* LD H,(HL) */
+            LD_R8_AR16(mmu, &h, h, l); break;
         case 0x67:
             /* LD H,A */
-            LD_R8_R8(h, acc);
-            break;
+            LD_R8_R8(h, acc); break;
         case 0x68:
+            /* LD L,B */
+            LD_R8_R8(l, b); break;
         case 0x69:
+            /* LD L,C */
+            LD_R8_R8(l, c); break;
         case 0x6A:
+            /* LD L,D */
+            LD_R8_R8(l , d); break;
         case 0x6B:
+            /* LD L,E */
+            LD_R8_R8(l, e); break;
         case 0x6C:
+            /* LD L,H */
+            LD_R8_R8(l, h); break;
         case 0x6D:
+            /* LD L,L */
+            LD_R8_R8(l, l); break;
         case 0x6E:
+            /* LD L,(HL) */
+            LD_R8_AR16(mmu, &l, h, l); break;
         case 0x6F:
+            /* LD L,A */
+            LD_R8_R8(l, acc); break;
         case 0x70:
+            /* LD (HL),B */
+            LD_A16_U8(mmu, HILO(h, l), b); break;
         case 0x71:
+            /* LD (HL),C */
+            LD_A16_U8(mmu, HILO(h, l), c); break;
         case 0x72:
+            /* LD (HL),D */
+            LD_A16_U8(mmu, HILO(h, l), d); break;
         case 0x73:
+            /* LD (HL),E */
+            LD_A16_U8(mmu, HILO(h, l), e); break;
         case 0x74:
+            /* LD (HL),H */
+            LD_A16_U8(mmu, HILO(h, l), h); break;
         case 0x75:
+            /* LD (HL),L */
+            LD_A16_U8(mmu, HILO(h, l), l); break;
         case 0x76:
-        NOT_IMPLEMENTED
+            /* HALT */
+            return(-1);
         case 0x77:
             /* LD (HL),A */
-            LD_AR16_A(mmu, h, l, acc);
-            break;
+            LD_AR16_A(mmu, h, l, acc); break;
         case 0x78:
             /* LD A,B */
-            LD_R8_R8(acc, b);
-            break;
+            LD_R8_R8(acc, b); break;
         case 0x79:
             /* LD A,C */
-            LD_R8_R8(acc, c);
-            break;
+            LD_R8_R8(acc, c); break;
         case 0x7A:
-        NOT_IMPLEMENTED
+            /* LD A,D */
+            LD_R8_R8(acc, d); break;
         case 0x7B:
             /* LD A, E */
-            LD_R8_R8(acc, e);
-            break;
+            LD_R8_R8(acc, e); break;
         case 0x7C:
             /* LD A,H */
-            LD_R8_R8(acc, h);
-            break;
+            LD_R8_R8(acc, h); break;
         case 0x7D:
             /* LD A,L */
-            LD_R8_R8(acc, l);
-            break;
+            LD_R8_R8(acc, l); break;
         case 0x7E:
             /* LD A,(HL) */
-            LD_R8_AR16(mmu, &acc, h, l);
-            break;
+            LD_R8_AR16(mmu, &acc, h, l); break;
         case 0x7F:
-        NOT_IMPLEMENTED
+            /* LD A,A */
+            LD_R8_R8(acc, acc); break;
         case 0x80:
             /* ADD A,B */
             ADD_R8_U8(&acc, b);
@@ -869,12 +986,23 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0xC4:
             /* CALL NZ,u16 */
-        NOT_IMPLEMENTED
+            if (flag_z == 0) {
+                PUSH_R16(mmu, HI(pc), LO(pc));
+                pc = HILO(mmu.read(pc+1), mmu.read(pc));
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            } else {
+                pc += 2;
+            }
+            break;
         case 0xC5:
             /* PUSH BC */
             PUSH_R16(mmu, b, c);
             break;
         case 0xC6:
+            /* ADD A,u8 */
+            ADD_R8_U8(&acc, fetch_pc(mmu));
+            break;
         case 0xC7:
         NOT_IMPLEMENTED
         case 0xC8:
@@ -916,9 +1044,20 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             pc = HILO(mmu.read(pc+1), mmu.read(pc));
             break;
         case 0xCE:
+            /* ADC A,u8 */
+            ADC_R8_U8(&acc, fetch_pc(mmu)); break;
         case 0xCF:
+            /* RST 08h */
+            RST(mmu, 0x08); break;
         case 0xD0:
-        NOT_IMPLEMENTED
+            /* RET NC */
+            if (flag_c == 0) {
+                pc = mmu.read(sp++);
+                pc |= (mmu.read(sp++) << 8);
+                clocks += INSTR_CLOCKS_BRANCH[pc_val];
+                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+            }
+            break;
         case 0xD1:
             /* POP DE */
             POP_R16(mmu, &d, &e);
@@ -932,6 +1071,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             PUSH_R16(mmu, d, e);
             break;
         case 0xD6:
+            /* SUB A,u8 */
+            SUB_R8_U8(&acc, fetch_pc(mmu));
+            break;
         case 0xD7:
         case 0xD8:
         case 0xD9:
@@ -979,8 +1121,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0xEB:
         case 0xEC:
         case 0xED:
-        case 0xEE:
         NOT_IMPLEMENTED
+        case 0xEE:
+            /* XOR A,u8 */
+            XOR_R8_U8(&acc, fetch_pc(mmu));
+            break;
         case 0xEF:
             /* RST 28h */
             RST(mmu, 0x28);

@@ -67,6 +67,14 @@ private:
     inline void RST(mmu &mmu, uint8_t x);
 
     inline void RET(mmu &mmu);
+
+    inline void SUB_R8_U8(uint8_t *x, uint8_t y);
+
+
+    inline void RR(uint8_t *x);
+    inline void RRC(uint8_t *x);
+    inline void RL(uint8_t *x);
+    inline void RLC(uint8_t *x);
 };
 
 
