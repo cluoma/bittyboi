@@ -92,6 +92,11 @@ private:
     inline void BIT(uint8_t x, uint8_t bit);
     inline void BIT_addr(mmu &mmu, uint16_t addr, uint8_t bit);
 
+    inline void RES(uint8_t *x, uint8_t bit);
+    inline void RES_addr(mmu &mmu, uint16_t addr, uint8_t bit);
+
+    inline void SET(uint8_t *x, uint8_t bit);
+    inline void SET_addr(mmu &mmu, uint16_t addr, uint8_t bit);
 };
 
 

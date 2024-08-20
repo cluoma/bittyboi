@@ -358,6 +358,28 @@ inline void cpu::BIT_addr(mmu &mmu, uint16_t addr, uint8_t bit) {
     mmu.write(addr, x);
 }
 
+inline void cpu::RES(uint8_t *x, uint8_t bit) {
+    // bit should be between 0 and 7
+    (*x) = (*x) & ( ~((uint8_t)0x1) << bit );
+}
+inline void cpu::RES_addr(mmu &mmu, uint16_t addr, uint8_t bit) {
+    // bit should be between 0 and 7
+    uint8_t x = mmu.read(addr);
+    RES(&x, bit);
+    mmu.write(addr, x);
+}
+inline void cpu::SET(uint8_t *x, uint8_t bit) {
+    // bit should be between 0 and 7
+    (*x) = (*x) | (0x1 << bit);
+}
+inline void cpu::SET_addr(mmu &mmu, uint16_t addr, uint8_t bit) {
+    // bit should be between 0 and 7
+    uint8_t x = mmu.read(addr);
+    SET(&x, bit);
+    mmu.write(addr, x);
+}
+
+
 int cpu::tick(mmu &mmu, ppu &ppu) {
     uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
     printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
@@ -367,7 +389,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
     int clocks = 0;
     pc_val = fetch_pc(mmu);
     clocks += INSTR_CLOCKS_BASE[pc_val];
-    ppu.tick(INSTR_CLOCKS_BASE[pc_val], mmu);
+    //ppu.tick(INSTR_CLOCKS_BASE[pc_val], mmu);
 
 //    if (pc == 0x0055) {
 //        mmu.dump_mem(0x8000, 26 * 16);
@@ -510,7 +532,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 0) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             else
                 pc++;
@@ -553,7 +575,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             else
                 pc++;
@@ -588,7 +610,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 0) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc++;
             }
@@ -1048,7 +1070,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 0) {
                 RET(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xC1:
@@ -1069,7 +1091,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 PUSH_R16(mmu, HI(pc), LO(pc));
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1089,7 +1111,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 RET(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xC9:
@@ -1103,13 +1125,13 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 pc = scratch16;
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xCB:
             prefix(mmu);
             clocks += 2;
-            ppu.tick(2, mmu);
+            //ppu.tick(2, mmu);
             break;
         case 0xCC:
         NOT_IMPLEMENTED
@@ -1134,7 +1156,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 pc = mmu.read(sp++);
                 pc |= (mmu.read(sp++) << 8);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
+                //ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xD1:
@@ -1650,263 +1672,389 @@ void cpu::prefix(mmu &mmu) {
             /* BIT 7,A */
             BIT(acc, 7); break;
         case 0x80:
-            break;
+            /* RES 0,B */
+            RES(&b, 0); break;
         case 0x81:
-            break;
+            /* RES 0,C */
+            RES(&c, 0); break;
         case 0x82:
-            break;
+            /* RES 0,D */
+            RES(&d, 0); break;
         case 0x83:
-            break;
+            /* RES 0,E */
+            RES(&e, 0); break;
         case 0x84:
-            break;
+            /* RES 0,H */
+            RES(&h, 0); break;
         case 0x85:
-            break;
+            /* RES 0,L */
+            RES(&l, 0); break;
         case 0x86:
-            break;
+            /* RES 0,(HL) */
+            RES_addr(mmu, HILO(h, l), 0); break;
         case 0x87:
-            break;
+            /* RES 0,A */
+            RES(&acc, 0); break;
         case 0x88:
-            break;
+            /* RES 1,B */
+            RES(&b, 1); break;
         case 0x89:
-            break;
+            /* RES 1,C */
+            RES(&c, 1); break;
         case 0x8A:
-            break;
+            /* RES 1,D */
+            RES(&d, 1); break;
         case 0x8B:
-            break;
+            /* RES 1,E */
+            RES(&e, 1); break;
         case 0x8C:
-            break;
+            /* RES 1,H */
+            RES(&h, 1); break;
         case 0x8D:
-            break;
+            /* RES 1,L */
+            RES(&l, 1); break;
         case 0x8E:
-            break;
+            /* RES 1,(HL) */
+            RES_addr(mmu, HILO(h, l), 1); break;
         case 0x8F:
-            break;
+            /* RES 1,A */
+            RES(&acc, 1); break;
         case 0x90:
-            break;
+            /* RES 2,B */
+            RES(&b, 2); break;
         case 0x91:
-            break;
+            /* RES 2,C */
+            RES(&c, 2); break;
         case 0x92:
-            break;
+            /* RES 2,D */
+            RES(&d, 2); break;
         case 0x93:
-            break;
+            /* RES 2,E */
+            RES(&e, 2); break;
         case 0x94:
-            break;
+            /* RES 2,H */
+            RES(&h, 2); break;
         case 0x95:
-            break;
+            /* RES 2,L */
+            RES(&l, 2); break;
         case 0x96:
-            break;
+            /* RES 2,(HL) */
+            RES_addr(mmu, HILO(h, l), 2); break;
         case 0x97:
-            break;
+            /* RES 2,A */
+            RES(&acc, 2); break;
         case 0x98:
-            break;
+            /* RES 3,B */
+            RES(&b, 3); break;
         case 0x99:
-            break;
+            /* RES 3,C */
+            RES(&c, 3); break;
         case 0x9A:
-            break;
+            /* RES 3,D */
+            RES(&d, 3); break;
         case 0x9B:
-            break;
+            /* RES 3,E */
+            RES(&e, 3); break;
         case 0x9C:
-            break;
+            /* RES 3,H */
+            RES(&h, 3); break;
         case 0x9D:
-            break;
+            /* RES 3,L */
+            RES(&l, 3); break;
         case 0x9E:
-            break;
+            /* RES 3,(HL) */
+            RES_addr(mmu, HILO(h, l), 3); break;
         case 0x9F:
-            break;
+            /* RES 3,A */
+            RES(&acc, 3); break;
         case 0xA0:
-            break;
+            /* RES 4,B */
+            RES(&b, 4); break;
         case 0xA1:
-            break;
+            /* RES 4,C */
+            RES(&c, 4); break;
         case 0xA2:
-            break;
+            /* RES 4,D */
+            RES(&d, 4); break;
         case 0xA3:
-            break;
+            /* RES 4,E */
+            RES(&e, 4); break;
         case 0xA4:
-            break;
+            /* RES 4,H */
+            RES(&h, 4); break;
         case 0xA5:
-            break;
+            /* RES 4,L */
+            RES(&l, 4); break;
         case 0xA6:
-            break;
+            /* RES 4,(HL) */
+            RES_addr(mmu, HILO(h, l), 4); break;
         case 0xA7:
-            break;
+            /* RES 4,A */
+            RES(&acc, 4); break;
         case 0xA8:
-            break;
+            /* RES 5,B */
+            RES(&b, 5); break;
         case 0xA9:
-            break;
+            /* RES 5,C */
+            RES(&c, 5); break;
         case 0xAA:
-            break;
+            /* RES 5,D */
+            RES(&d, 5); break;
         case 0xAB:
-            break;
+            /* RES 5,E */
+            RES(&e, 5); break;
         case 0xAC:
-            break;
+            /* RES 5,H */
+            RES(&h, 5); break;
         case 0xAD:
-            break;
+            /* RES 5,L */
+            RES(&l, 5); break;
         case 0xAE:
-            break;
+            /* RES 5,(HL) */
+            RES_addr(mmu, HILO(h, l), 5); break;
         case 0xAF:
-
-            break;
+            /* RES 5,A */
+            RES(&acc, 5); break;
         case 0xB0:
-            break;
+            /* RES 6,B */
+            RES(&b, 6); break;
         case 0xB1:
-            break;
+            /* RES 6,C */
+            RES(&c, 6); break;
         case 0xB2:
-            break;
+            /* RES 6,D */
+            RES(&d, 6); break;
         case 0xB3:
-            break;
+            /* RES 6,E */
+            RES(&e, 6); break;
         case 0xB4:
-            break;
+            /* RES 6,H */
+            RES(&h, 6); break;
         case 0xB5:
-            break;
+            /* RES 6,L */
+            RES(&l, 6); break;
         case 0xB6:
-            break;
+            /* RES 6,(HL) */
+            RES_addr(mmu, HILO(h, l), 6); break;
         case 0xB7:
-            break;
+            /* RES 6,A */
+            RES(&acc, 6); break;
         case 0xB8:
-            break;
+            /* RES 7,B */
+            RES(&b, 7); break;
         case 0xB9:
-            break;
+            /* RES 7,C */
+            RES(&c, 7); break;
         case 0xBA:
-            break;
+            /* RES 7,D */
+            RES(&d, 7); break;
         case 0xBB:
-            break;
+            /* RES 7,E */
+            RES(&e, 7); break;
         case 0xBC:
-            break;
+            /* RES 7,H */
+            RES(&h, 7); break;
         case 0xBD:
-            break;
+            /* RES 7,L */
+            RES(&l, 7); break;
         case 0xBE:
-            break;
+            /* RES 7,(HL) */
+            RES_addr(mmu, HILO(h, l), 7); break;
         case 0xBF:
-            break;
+            /* RES 7,A */
+            RES(&acc, 7); break;
         case 0xC0:
-            break;
+            /* SET 0,B */
+            SET(&b, 0); break;
         case 0xC1:
-            break;
+            /* SET 0,C */
+            SET(&c, 0); break;
         case 0xC2:
-            break;
+            /* SET 0,D */
+            SET(&d, 0); break;
         case 0xC3:
-            break;
+            /* SET 0,E */
+            SET(&e, 0); break;
         case 0xC4:
-            break;
+            /* SET 0,H */
+            SET(&h, 0); break;
         case 0xC5:
-            break;
+            /* SET 0,L */
+            SET(&l, 0); break;
         case 0xC6:
-            break;
+            /* SET 0,(HL) */
+            SET_addr(mmu, HILO(h, l), 0); break;
         case 0xC7:
-            break;
+            /* SET 0,A */
+            SET(&acc, 0); break;
         case 0xC8:
-            break;
+            /* SET 1,B */
+            SET(&b, 1); break;
         case 0xC9:
-            break;
+            /* SET 1,C */
+            SET(&c, 1); break;
         case 0xCA:
-            break;
+            /* SET 1,D */
+            SET(&d, 1); break;
         case 0xCB:
-
-            break;
+            /* SET 1,E */
+            SET(&e, 1); break;
         case 0xCC:
-            break;
+            /* SET 1,H */
+            SET(&h, 1); break;
         case 0xCD:
-            break;
+            /* SET 1,L */
+            SET(&l, 1); break;
         case 0xCE:
-            break;
+            /* SET 1,(HL) */
+            SET_addr(mmu, HILO(h, l), 1); break;
         case 0xCF:
-            break;
+            /* SET 1,A */
+            SET(&acc, 1); break;
         case 0xD0:
-            break;
+            /* SET 2,B */
+            SET(&b, 2); break;
         case 0xD1:
-            break;
+            /* SET 2,C */
+            SET(&c, 2); break;
         case 0xD2:
-            break;
+            /* SET 2,D */
+            SET(&d, 2); break;
         case 0xD3:
-            break;
+            /* SET 2,E */
+            SET(&e, 2); break;
         case 0xD4:
-            break;
+            /* SET 2,H */
+            SET(&h, 2); break;
         case 0xD5:
-            break;
+            /* SET 2,L */
+            SET(&l, 2); break;
         case 0xD6:
-            break;
+            /* SET 2,(HL) */
+            SET_addr(mmu, HILO(h, l), 2); break;
         case 0xD7:
-            break;
+            /* SET 2,A */
+            SET(&acc, 2); break;
         case 0xD8:
-            break;
+            /* SET 3,B */
+            SET(&b, 3); break;
         case 0xD9:
-            break;
+            /* SET 3,C */
+            SET(&c, 3); break;
         case 0xDA:
-            break;
+            /* SET 3,D */
+            SET(&d, 3); break;
         case 0xDB:
-            break;
+            /* SET 3,E */
+            SET(&e, 3); break;
         case 0xDC:
-            break;
+            /* SET 3,H */
+            SET(&h, 3); break;
         case 0xDD:
-            break;
+            /* SET 3,L */
+            SET(&l, 3); break;
         case 0xDE:
-            break;
+            /* SET 3,(HL) */
+            SET_addr(mmu, HILO(h, l), 3); break;
         case 0xDF:
-            break;
+            /* SET 3,A */
+            SET(&acc, 3); break;
         case 0xE0:
-            break;
+            /* SET 4,B */
+            SET(&b, 4); break;
         case 0xE1:
-            break;
+            /* SET 4,C */
+            SET(&c, 4); break;
         case 0xE2:
-            break;
+            /* SET 4,D */
+            SET(&d, 4); break;
         case 0xE3:
-            break;
+            /* SET 4,E */
+            SET(&e, 4); break;
         case 0xE4:
-            break;
+            /* SET 4,H */
+            SET(&h, 4); break;
         case 0xE5:
-            break;
+            /* SET 4,L */
+            SET(&l, 4); break;
         case 0xE6:
-            break;
+            /* SET 4,(HL) */
+            SET_addr(mmu, HILO(h, l), 4); break;
         case 0xE7:
-            break;
+            /* SET 4,A */
+            SET(&acc, 4); break;
         case 0xE8:
-            break;
+            /* SET 5,B */
+            SET(&b, 5); break;
         case 0xE9:
-            break;
+            /* SET 5,C */
+            SET(&c, 5); break;
         case 0xEA:
-            break;
+            /* SET 5,D */
+            SET(&d, 5); break;
         case 0xEB:
-            break;
+            /* SET 5,E */
+            SET(&e, 5); break;
         case 0xEC:
-            break;
+            /* SET 5,H */
+            SET(&h, 5); break;
         case 0xED:
-            break;
+            /* SET 5,L */
+            SET(&l, 5); break;
         case 0xEE:
-            break;
+            /* SET 5,(HL) */
+            SET_addr(mmu, HILO(h, l), 5); break;
         case 0xEF:
-            break;
+            /* SET 5,A */
+            SET(&acc, 5); break;
         case 0xF0:
-            break;
+            /* SET 6,B */
+            SET(&b, 6); break;
         case 0xF1:
-            break;
+            /* SET 6,C */
+            SET(&c, 6); break;
         case 0xF2:
-            break;
+            /* SET 6,D */
+            SET(&d, 6); break;
         case 0xF3:
-            break;
+            /* SET 6,E */
+            SET(&e, 6); break;
         case 0xF4:
-            break;
+            /* SET 6,H */
+            SET(&h, 6); break;
         case 0xF5:
-            break;
+            /* SET 6,L */
+            SET(&l, 6); break;
         case 0xF6:
-            break;
+            /* SET 6,(HL) */
+            SET_addr(mmu, HILO(h, l), 6); break;
         case 0xF7:
-            break;
+            /* SET 6,A */
+            SET(&acc, 6); break;
         case 0xF8:
-            break;
+            /* SET 7,B */
+            SET(&b, 7); break;
         case 0xF9:
-            break;
+            /* SET 7,C */
+            SET(&c, 7); break;
         case 0xFA:
-            break;
+            /* SET 7,D */
+            SET(&d, 7); break;
         case 0xFB:
-            break;
+            /* SET 7,E */
+            SET(&e, 7); break;
         case 0xFC:
-            break;
+            /* SET 7,H */
+            SET(&h, 7); break;
         case 0xFD:
-            break;
+            /* SET 7,L */
+            SET(&l, 7); break;
         case 0xFE:
-            break;
+            /* SET 7,(HL) */
+            SET_addr(mmu, HILO(h, l), 7); break;
         case 0xFF:
-            break;
+            /* SET 7,A */
+            SET(&acc, 7); break;
     }
 }
 
