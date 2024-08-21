@@ -387,6 +387,25 @@ inline void cpu::CP(uint8_t x, uint8_t y) {
     flag_z = x == y ? 1 : 0;
 }
 
+inline void cpu::DAA(uint8_t *x) {
+    if(flag_n){
+        if(flag_c)
+            (*x) -= 0x60;
+        if(flag_h)
+            (*x) -= 0x6;
+    }
+    else{
+        if(flag_c || (*x) > 0x99){
+            (*x) += 0x60;
+            flag_c = 1;
+        }
+        if(flag_h || ((*x) & 0xF) > 0x9)
+            (*x) += 0x6;
+    }
+    flag_h = 0;
+    flag_z = (*x) == 0 ? 1 : 0;
+}
+
 int cpu::tick(mmu &mmu, ppu &ppu) {
     uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
     printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
@@ -530,6 +549,8 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
         case 0x1F:
             /* RRA */
             RR(&acc);
+            // special case for RRA opcode, it unsets zero flag
+            flag_z = 0;
             break;
         case 0x20:
             /* JR NZ, s8 */
@@ -573,7 +594,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x27:
             /* DAA */
-        NOT_IMPLEMENTED
+            DAA(&acc); break;
         case 0x28:
             /* JR Z, s8 */
             if (flag_z == 1) {

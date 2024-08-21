@@ -99,6 +99,8 @@ private:
     inline void SET_addr(mmu &mmu, uint16_t addr, uint8_t bit);
 
     inline void CP(uint8_t x, uint8_t y);
+
+    inline void DAA(uint8_t *x);
 };
 
 
