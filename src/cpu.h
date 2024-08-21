@@ -42,6 +42,7 @@ private:
     uint16_t scratch16 = 0;
 
     inline void LD_R8_R8(uint8_t &x, uint8_t &y);
+    inline void LD_R16_R16(uint8_t *x, uint8_t *y, uint8_t upper, uint8_t lower);
     inline void LD_R8_U8(mmu &mmu, uint8_t *x);
     inline void LD_R8_AR16(mmu &mmu, uint8_t *x, uint8_t upper, uint8_t lower);
     inline void LD_R8_A16(mmu &mmu, uint8_t *x);
@@ -101,6 +102,8 @@ private:
     inline void CP(uint8_t x, uint8_t y);
 
     inline void DAA(uint8_t *x);
+
+    void SBC_R8_U8(uint8_t *x, uint8_t y);
 };
 
 
