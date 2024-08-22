@@ -47,6 +47,7 @@ private:
     inline void LD_R8_AR16(mmu &mmu, uint8_t *x, uint8_t upper, uint8_t lower);
     inline void LD_R8_A16(mmu &mmu, uint8_t *x);
     static inline void LD_A_HLP(mmu &mmu, uint8_t &acc, uint8_t &h, uint8_t &l);
+    inline void LD_A_HLM(mmu &mmu, uint8_t *x, uint8_t *upper, uint8_t *lower);
     static inline void LD_AR16_A(mmu &mmu, uint8_t &upper, uint8_t &lower, uint8_t &acc);
     inline void LD_A16_U8(mmu &mmu, uint16_t addr, uint8_t val);
 
@@ -54,6 +55,7 @@ private:
     inline void PUSH_R16(mmu &mmu, uint8_t upper, uint8_t lower);
 
     inline void INC_R8(uint8_t *x);
+    inline void INC_A16(mmu &mmu, uint16_t addr);
     inline void DEC_R8(uint8_t *x);
     static inline void DEC_R16(uint8_t *upper, uint8_t *lower);
     inline void ADD_R8_U8(uint8_t *x, uint8_t y);

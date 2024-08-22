@@ -13,7 +13,9 @@ class mmu {
 public:
     mmu() {
         for (uint16_t i = 0; i < MEMSIZE; i++) {
-            mem[i] = 0xFF;
+            // Swap below when not running gb doctor tests
+            //mem[i] = 0xFF;
+            mem[i] = 0x0;
         }
         for (uint16_t i = 0xFF00; i < MEMSIZE; i++) {
             mem[i] = 0;
