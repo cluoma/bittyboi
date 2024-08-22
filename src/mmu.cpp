@@ -22,26 +22,32 @@ uint8_t bootrom[] = {0x31,0xfe,0xff,0xaf,0x21,0xff,0x9f,0x32,0xcb,0x7c,0x20,0xfb
                      0x21,0x04,0x01,0x11,0xa8,0x00,0x1a,0x13,0xbe,0x20,0xfe,0x23,0x7d,0xfe,0x34,0x20,
                      0xf5,0x06,0x19,0x78,0x86,0x23,0x05,0x20,0xfb,0x86,0x20,0xfe,0x3e,0x01,0xe0,0x50};
 
+#define JOYP 0xFF00
+
 uint8_t mmu::read(uint16_t addr) {
 //    if (addr == 0x0104) {
 //        printf("reading Nintendo logo: %02x\n", mem[addr]);
 //    }
 
-    if (addr == 0xFF44) {
-        return 0x90;
+    // this is for special address that we may want special behaviour for
+    switch (addr) {
+        case JOYP:
+            return 0xff;
+        default:
+            break;
     }
 
+//    if (addr == 0xFF44) {
+//        return 0x90;
+//    }
+
+    // Read memory, or bootrom if 0xFF50 is not set
     if (mem[0xFF50] == 1) {
         return mem[addr];
     } else if (addr > 0x00FF) {
         return mem[addr];
     } else {
         return bootrom[addr];
-    }
-    if (mem[0xFF50] != 1 && addr >= 0x0000 && addr <= 0x00FF) {
-        return bootrom[addr];
-    } else {
-        return mem[addr];
     }
 }
 

@@ -56,7 +56,7 @@ void ppu::fill_pixel_line(mmu &mmu, uint8_t scan_line) {
 }
 
 void ppu::tick(uint8_t clocks, mmu &mmu) {
-    return;
+    //return;
     //printf("Clocks: %d Ticks: %d\n", clocks, ticks);
     while (clocks-- > 0) {
         ticks++;

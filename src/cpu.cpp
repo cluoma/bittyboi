@@ -445,18 +445,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
            acc, f, b, c, d, e, h, l, sp, pc,
            mmu.read(pc), mmu.read(pc+1), mmu.read(pc+2), mmu.read(pc+3));
 
-    int clocks = 0;
     pc_val = fetch_pc(mmu);
+
+    int clocks = 0;
     clocks += INSTR_CLOCKS_BASE[pc_val];
-    ppu.tick(INSTR_CLOCKS_BASE[pc_val], mmu);
 
-//    if (pc == 0x0055) {
-//        mmu.dump_mem(0x8000, 26 * 16);
-//    }
-
-//    printf("PC: %04x PC_VAL: %02x\n", pc-1, pc_val);
-//    printf("(%04x)->%02x (%04x)->%02x\n", HILO(h,l), mmu.read(HILO(h, l)), HILO(d,e), mmu.read(HILO(d, e)));
-//    printf("acc: %02x\n", acc);
     switch (pc_val) {
         case 0x00:
             /* NOP */
@@ -586,7 +579,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 0) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             else
                 pc++;
@@ -626,7 +618,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             else
                 pc++;
@@ -662,7 +653,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 0) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc++;
             }
@@ -706,7 +696,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 1) {
                 pc += (int8_t) fetch_pc(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 1;
             }
@@ -1124,7 +1113,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 0) {
                 RET(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xC1:
@@ -1136,7 +1124,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 scratch8 = fetch_pc(mmu);
                 pc = HILO(fetch_pc(mmu), scratch8);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1152,7 +1139,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 PUSH_R16(mmu, HI(pc+2), LO(pc+2));
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1173,7 +1159,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 RET(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xC9:
@@ -1186,13 +1171,11 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_z == 1) {
                 pc = scratch16;
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xCB:
             prefix(mmu);
             clocks += 2;
-            ppu.tick(2, mmu);
             break;
         case 0xCC:
             /* CALL Z,u16 */
@@ -1200,7 +1183,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 PUSH_R16(mmu, HI(pc+2), LO(pc+2));
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1225,7 +1207,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 pc = mmu.read(sp++);
                 pc |= (mmu.read(sp++) << 8);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xD1:
@@ -1236,7 +1217,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 0) {
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1250,7 +1230,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 PUSH_R16(mmu, HI(pc+2), LO(pc+2));
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1269,7 +1248,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 1) {
                 RET(mmu);
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             }
             break;
         case 0xD9:
@@ -1280,7 +1258,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             if (flag_c == 1) {
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1294,7 +1271,6 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
                 PUSH_R16(mmu, HI(pc+2), LO(pc+2));
                 pc = HILO(mmu.read(pc+1), mmu.read(pc));
                 clocks += INSTR_CLOCKS_BRANCH[pc_val];
-                ppu.tick(INSTR_CLOCKS_BRANCH[pc_val], mmu);
             } else {
                 pc += 2;
             }
@@ -1419,6 +1395,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             /* RST 38h */
             RST(mmu, 0x38); break;
     }
+
+    // run ppu
+    ppu.tick(clocks, mmu);
 
     return clocks;
 }

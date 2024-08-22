@@ -12,24 +12,6 @@ int SCREEN_HEIGHT = 144;
 
 int main () {
 
-//    uint8_t t = 0x90;
-//    uint8_t q = -0x90;
-//    printf("q: %02x\n", q);
-//    uint16_t r = 0x90 + 0x70;
-//    printf("r: %04x\n", r);
-//    uint8_t c = CHECK_CARRY(t, -0x90);
-//    printf("C: %u\n", c);
-//    c = CHECK_CARRY_DEC(t, -0x90);
-//    printf("C: %u\n", c);
-//    return 1;
-
-//    printf("%d\n", 0xFC);
-//    return 1;
-
-//    gameboy gb1;
-//    gb1.load_rom("tetris.gb");
-//    while (gb1.tick() != -1) {} return 1;
-
     // Init SDL
     // code without checking for errors
     SDL_Init(SDL_INIT_VIDEO);
@@ -61,13 +43,22 @@ int main () {
 
 
     gameboy gb;
-//    gb.load_rom("tetris.gb");
+    gb.load_rom("tetris.gb");
 //    gb.load_rom("cpu_instrs.gb");
-    gb.load_rom("01-special.gb");
-    gb.init_no_bootrom();
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/01-special.gb");
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/02-interrupts.gb");
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/03-op sp,hl.gb");
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/04-op r,imm.gb");
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/09-op r,r.gb");
+//    gb.load_rom("/home/colin/Documents/gb-test-roms/cpu_instrs/individual/10-bit ops.gb");
+//    gb.init_no_bootrom();
 
     bool last_state_is_vblank = false;
-    while (gb.tick() != -1) {
+    uint64_t rt = 0;
+    while (gb.tick() != -1
+            //&& rt < 5000000
+            ) {
+        rt++;
         // only refresh screen once per vblank
         if (gb.is_vblank()) {
             if (!last_state_is_vblank) {
@@ -105,7 +96,10 @@ int main () {
             last_state_is_vblank = false;
         }
     }
-    return 1;
+    SDL_DestroyWindow(Window);
+    SDL_Quit();
+
+    return 0;
 }
 //
 //
