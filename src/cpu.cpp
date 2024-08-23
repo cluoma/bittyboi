@@ -82,14 +82,10 @@ uint8_t INSTR_CLOCKS_BRANCH[] = {
 #define BIT6_COMPLEMENT(X) (((~X) & 0b01000000) >> 6)
 #define BIT7_COMPLEMENT(X) (((~X) & 0b10000000) >> 7)
 
-#define SUBu8(X, Y) \
-    flag_h = CHECK_HALF_CARRY_DEC(X, Y);\
-    flag_c = CHECK_CARRY_DEC(X, Y);\
-    X -= Y;\
-    flag_z = (X) == 0 ? 1 : 0
-
 #define NOT_IMPLEMENTED printf("%02x not implemented\n", pc_val); return(-1);
 
+#define INTERRUPT_IE 0xFFFF
+#define INTERRUPT_IF 0xFF0F
 
 inline uint8_t cpu::fetch_pc(mmu &mmu) {
     return mmu.read(pc++);
@@ -440,14 +436,63 @@ inline void cpu::DAA(uint8_t *x) {
 }
 
 int cpu::tick(mmu &mmu, ppu &ppu) {
+
+    int clocks = 0;
+
     uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
     printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
            acc, f, b, c, d, e, h, l, sp, pc,
            mmu.read(pc), mmu.read(pc+1), mmu.read(pc+2), mmu.read(pc+3));
 
-    pc_val = fetch_pc(mmu);
+    // Check interrupts
+    bool did_int = false;
+    if (flag_ime) {
+        uint8_t ie_val = mmu.read(INTERRUPT_IE);
+        uint8_t if_val = mmu.read(INTERRUPT_IF);
+        if ( (ie_val & if_val) & 0x1 ) {                // VBLANK
+            flag_ime = 0;
+            mmu.write(INTERRUPT_IF, if_val & (~(uint8_t)0x1));
+            PUSH_R16(mmu, HI(pc), LO(pc));
+            pc = 0x0040;
+            clocks += 5;
+            did_int = true;
+            //return clocks;
+        } else if ( ((ie_val & if_val) >> 1) & 0x1 ) {  // LCDC
+            flag_ime = 0;
+            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 1)));
+            PUSH_R16(mmu, HI(pc), LO(pc));
+            pc = 0x0048;
+            clocks += 5;
+            did_int = true;
+            //return clocks;
+        } else if ( ((ie_val & if_val) >> 2) & 0x1 ) {  // TIMER
+            flag_ime = 0;
+            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 2)));
+            PUSH_R16(mmu, HI(pc), LO(pc));
+            pc = 0x0050;
+            clocks += 5;
+            did_int = true;
+            //return clocks;
+        } else if ( ((ie_val & if_val) >> 3) & 0x1 ) {  // SERIAL
+            flag_ime = 0;
+            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 3)));
+            PUSH_R16(mmu, HI(pc), LO(pc));
+            pc = 0x0058;
+            clocks += 5;
+            did_int = true;
+            //return clocks;
+        } else if ( ((ie_val & if_val) >> 4) & 0x1 ) {  // JOYPAD
+            flag_ime = 0;
+            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 4)));
+            PUSH_R16(mmu, HI(pc), LO(pc));
+            pc = 0x0060;
+            clocks += 5;
+            did_int = true;
+            //return clocks;
+        }
+    }
 
-    int clocks = 0;
+    pc_val = fetch_pc(mmu);
     clocks += INSTR_CLOCKS_BASE[pc_val];
 
     switch (pc_val) {
@@ -496,6 +541,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0x09:
             /* ADD HL,BC */
+            ADD_R16_U16(&h, &l, b, c); break;
         case 0x0A:
             /* LD A,(BC) */
             LD_R8_AR16(mmu, &acc, b, c); break;
@@ -1252,7 +1298,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             break;
         case 0xD9:
             /* RETI */
-        NOT_IMPLEMENTED
+            flag_ime = 1;
+            RET(mmu);
+            break;
         case 0xDA:
             /* JP C,u16 */
             if (flag_c == 1) {
@@ -1310,7 +1358,13 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             RST(mmu, 0x20); break;
         case 0xE8:
             /* ADD SP,i8 */
-        NOT_IMPLEMENTED
+            scratch8 = fetch_pc(mmu);
+            flag_c = CHECK_CARRY((sp & 0xFF), scratch8);
+            flag_h = CHECK_HALF_CARRY((sp & 0xFF), scratch8);
+            flag_z = 0;
+            flag_n = 0;
+            sp += (int8_t) scratch8;
+            break;
         case 0xE9:
             /* JP HL */
             pc = HILO(h, l); break;
@@ -1350,8 +1404,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             acc = mmu.read(0xFF00 + c); break;
         case 0xF3:
             /* DI */
-            flag_ime = 0;
-            break;
+            flag_ime = 0; break;
         case 0xF4:
             /* ILLEGAL */
             return -1;
@@ -1364,10 +1417,20 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             OR_R8_U8(&acc, fetch_pc(mmu)); break;
         case 0xF7:
             /* RST 30h */
-            RST(mmu, 0x30);
+            RST(mmu, 0x30); break;
         case 0xF8:
             /* LD HL,SP+i8 */
-        NOT_IMPLEMENTED
+            h = HI(sp);
+            l = LO(sp);
+            scratch8 = fetch_pc(mmu);
+            flag_c = CHECK_CARRY(l, scratch8);
+            flag_h = CHECK_HALF_CARRY(l, scratch8);
+            flag_z = 0;
+            flag_n = 0;
+            scratch16 = HILO(h, l) + (int8_t) scratch8;
+            h = HI(scratch16);
+            l = LO(scratch16);
+            break;
         case 0xF9:
             /* LD SP,HL */
             sp = HILO(h, l); break;
@@ -1397,7 +1460,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
     }
 
     // run ppu
-    ppu.tick(clocks, mmu);
+    //ppu.tick(clocks, mmu);
 
     return clocks;
 }
