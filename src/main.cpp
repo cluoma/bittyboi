@@ -6,8 +6,8 @@
 #include "gameboy.h"
 #include <SDL.h>
 
-int SCREEN_WIDTH = 160;
-int SCREEN_HEIGHT = 144;
+int SCREEN_WIDTH = 320;
+int SCREEN_HEIGHT = 288;
 
 
 int main () {
@@ -91,7 +91,12 @@ int main () {
                                 break;
                         }
                         SDL_SetRenderDrawColor(Renderer, shade, shade, shade, 255);
-                        SDL_RenderDrawPoint(Renderer, x, y);
+                        int x1 = x * 2;
+                        int y1 = y * 2;
+                        SDL_RenderDrawPoint(Renderer, x1, y1);
+                        SDL_RenderDrawPoint(Renderer, x1+1, y1);
+                        SDL_RenderDrawPoint(Renderer, x1, y1+1);
+                        SDL_RenderDrawPoint(Renderer, x1+1, y1+1);
                     }
                 }
                 SDL_RenderPresent(Renderer);

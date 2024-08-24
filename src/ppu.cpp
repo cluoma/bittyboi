@@ -45,7 +45,7 @@ void ppu::fill_pixel_line(mmu &mmu, uint8_t scan_line) {
 //            if ( (( (uint8_t)((data1 & bitmask) >> (7-i)) << 1 ) | ( (data0 & bitmask) >> (7-i) ) ) > 3) {
 //                printf("%08b\n", (( (uint8_t)((data1 & bitmask) >> (7-i)) << 1 ) | ( (data0 & bitmask) >> (7-i) ) ));
 //            }
-            gb_screen_buffer[pixels + (scan_line*160)] = bg_palette_vals[( (uint8_t)((data1 & bitmask) >> (6-i)) ) | ( (data0 & bitmask) >> (7-i) )];
+            gb_screen_buffer[pixels + (scan_line*160)] = bg_palette_vals[( (uint8_t)((data1 & bitmask) >> (7-i)) << 1 ) | ( (data0 & bitmask) >> (7-i) )];
 //            if (gb_screen_buffer[pixels + (scan_line*160)] > 3) {
 //                printf("AAAAAAAAAA\n");
 //            }
@@ -88,6 +88,7 @@ void ppu::tick(uint8_t clocks, mmu &mmu) {
                     mmu.write(LY, mmu.read(LY) + 1);
                     if (mmu.read(LY) == 144) {
                         state = VBLANK;
+                        mmu.write(0xFF0F, mmu.read(0xFF0F) | 0x01);  // raise VBLANK interrupt flag
                     } else {
                         state = OAM_SEARCH;
                     }
