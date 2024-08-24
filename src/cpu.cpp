@@ -439,57 +439,49 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
 
     int clocks = 0;
 
-    uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
-    printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
-           acc, f, b, c, d, e, h, l, sp, pc,
-           mmu.read(pc), mmu.read(pc+1), mmu.read(pc+2), mmu.read(pc+3));
+    // Check halting
+    if (halting_status == HALTING) {
+        uint8_t ie_val = mmu.read(INTERRUPT_IE);
+        uint8_t if_val = mmu.read(INTERRUPT_IF);
+        if ( (ie_val & if_val) != 0 ) {
+            halting_status = RUNNING;
+        } else {
+            // run ppu
+            ppu.tick(1, mmu);
+            // run serial connection
+            serial.tick(1, mmu);
+            timer.tick(1, mmu);
+            return 1;
+        }
+    }
+
+//    uint8_t f = (flag_z << 7) | (flag_n << 6) | (flag_h << 5) | (flag_c << 4);
+//    printf("A:%02x F:%02x B:%02x C:%02x D:%02x E:%02x H:%02x L:%02x SP:%04x PC:%04x PCMEM:%02x,%02x,%02x,%02x\n",
+//           acc, f, b, c, d, e, h, l, sp, pc,
+//           mmu.read(pc), mmu.read(pc+1), mmu.read(pc+2), mmu.read(pc+3));
 
     // Check interrupts
     bool did_int = false;
-    if (flag_ime) {
-        uint8_t ie_val = mmu.read(INTERRUPT_IE);
-        uint8_t if_val = mmu.read(INTERRUPT_IF);
-        if ( (ie_val & if_val) & 0x1 ) {                // VBLANK
-            flag_ime = 0;
-            mmu.write(INTERRUPT_IF, if_val & (~(uint8_t)0x1));
-            PUSH_R16(mmu, HI(pc), LO(pc));
-            pc = 0x0040;
-            clocks += 5;
-            did_int = true;
-            //return clocks;
-        } else if ( ((ie_val & if_val) >> 1) & 0x1 ) {  // LCDC
-            flag_ime = 0;
-            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 1)));
-            PUSH_R16(mmu, HI(pc), LO(pc));
-            pc = 0x0048;
-            clocks += 5;
-            did_int = true;
-            //return clocks;
-        } else if ( ((ie_val & if_val) >> 2) & 0x1 ) {  // TIMER
-            flag_ime = 0;
-            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 2)));
-            PUSH_R16(mmu, HI(pc), LO(pc));
-            pc = 0x0050;
-            clocks += 5;
-            did_int = true;
-            //return clocks;
-        } else if ( ((ie_val & if_val) >> 3) & 0x1 ) {  // SERIAL
-            flag_ime = 0;
-            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 3)));
-            PUSH_R16(mmu, HI(pc), LO(pc));
-            pc = 0x0058;
-            clocks += 5;
-            did_int = true;
-            //return clocks;
-        } else if ( ((ie_val & if_val) >> 4) & 0x1 ) {  // JOYPAD
-            flag_ime = 0;
-            mmu.write(INTERRUPT_IF, if_val & (~((uint8_t)0x1 << 4)));
-            PUSH_R16(mmu, HI(pc), LO(pc));
-            pc = 0x0060;
-            clocks += 5;
-            did_int = true;
-            //return clocks;
+    if (interrupt_state == READY) {
+        if (flag_ime) {
+            uint8_t ie_val = mmu.read(INTERRUPT_IE);
+            uint8_t if_val = mmu.read(INTERRUPT_IF);
+            for (uint8_t i = 0; i <= 4; i++) {
+                // 0: VBLANK, 1: LCDC, 2: TIMER, 3: SERIAL, 4: JOYPAD
+                if (((ie_val & if_val) >> i) & 0x1) {
+                    flag_ime = 0;
+                    mmu.write(INTERRUPT_IF, if_val & (~((uint8_t) 0x1 << i)));
+                    PUSH_R16(mmu, HI(pc), LO(pc));
+                    pc = 0x0040 + (0x8 * i);
+                    clocks += 5;
+                    did_int = true;
+                    halting_status = RUNNING;
+                    break;
+                }
+            }
         }
+    } else if (interrupt_state == EI) {
+        interrupt_state = READY;
     }
 
     pc_val = fetch_pc(mmu);
@@ -934,7 +926,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_A16_U8(mmu, HILO(h, l), l); break;
         case 0x76:
             /* HALT */
-            return -1;
+            halting_status = HALTING; break;
         case 0x77:
             /* LD (HL),A */
             LD_AR16_A(mmu, h, l, acc); break;
@@ -1439,7 +1431,9 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             LD_R8_A16(mmu, &acc); break;
         case 0xFB:
             /* EI */
-            flag_ime = 1; break;
+            flag_ime = 1;
+            interrupt_state = EI;
+            break;
         case 0xFC:
             /* ILLEGAL */
             return -1;
@@ -1460,7 +1454,10 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
     }
 
     // run ppu
-    //ppu.tick(clocks, mmu);
+    ppu.tick(clocks, mmu);
+    // run serial connection
+    serial.tick(clocks, mmu);
+    timer.tick(clocks, mmu);
 
     return clocks;
 }

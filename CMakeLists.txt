@@ -15,5 +15,9 @@ add_executable(bittyboi
         src/gameboy.cpp
         src/gameboy.h
         src/mmu.cpp
-        src/mmu.h)
+        src/mmu.h
+        src/serial.cpp
+        src/serial.h
+        src/timer.cpp
+        src/timer.h)
 target_link_libraries(bittyboi ${SDL2_LIBRARIES})

@@ -49,6 +49,7 @@ uint8_t mmu::read(uint16_t addr) {
     } else {
         return bootrom[addr];
     }
+    return mem[addr];
 }
 
 void mmu::write(uint16_t addr, uint8_t val) {
@@ -56,7 +57,17 @@ void mmu::write(uint16_t addr, uint8_t val) {
         printf("disabling bootrom\n");
     }
 
-    mem[addr] = val;
+    if (addr == 0xFF0F) {
+        //printf("Writing to 0xFF0F: %02x\n", val);
+    }
+    if (addr == 0xFF05) {
+        //printf("Writing to 0xFF05: %02x\n", val);
+    }
+
+    if (addr == 0xFF04)  // writing anything to Timer DIV register resets to 0
+        mem[addr] = 0;
+    else
+        mem[addr] = val;
 }
 
 void mmu::dump_mem(uint16_t addr, uint16_t bytes) {

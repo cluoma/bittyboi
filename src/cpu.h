@@ -8,6 +8,8 @@
 #include <cstdint>
 #include "ppu.h"
 #include "mmu.h"
+#include "serial.h"
+#include "timer.h"
 
 #define MEMSIZE 0xFFFF
 
@@ -18,6 +20,15 @@ public:
 
     int tick(mmu &mmu, ppu &ppu);
     void init_no_bootrom();
+
+    enum InterruptState {
+        EI,
+        READY
+    };
+    enum Status {
+        RUNNING,
+        HALTING
+    };
 
 private:
     uint8_t fetch_pc(mmu &mmu); // fetch next byte from program counter, increment program counter
@@ -33,6 +44,8 @@ private:
     uint8_t flag_h = 0;
     uint8_t flag_c = 0;
     uint8_t flag_ime = 0;
+    InterruptState interrupt_state = READY;
+    Status halting_status = RUNNING;
     uint8_t b = 0; uint8_t c = 0;
     uint8_t d = 0; uint8_t e = 0;
     uint8_t h = 0; uint8_t l = 0;
@@ -41,6 +54,11 @@ private:
     uint8_t  scratch8 = 0;
     uint16_t scratch16 = 0;
 
+    /* misc */
+    Serial serial;
+    Timer timer;
+
+    /* opcode implementation definitions */
     inline void LD_R8_R8(uint8_t &x, uint8_t &y);
     inline void LD_R16_R16(uint8_t *x, uint8_t *y, uint8_t upper, uint8_t lower);
     inline void LD_R8_U8(mmu &mmu, uint8_t *x);
