@@ -32,6 +32,9 @@ private:
     uint8_t * gb_screen_buffer;
 
     void fill_pixel_line(mmu &mmu, uint8_t scan_line);
+    void fillBackgroundPixels(mmu &mmu, uint8_t scan_line);
+
+    void fillWindowPixels(mmu &mmu, uint8_t scan_line);
 };
 
 

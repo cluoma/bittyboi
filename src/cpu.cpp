@@ -450,6 +450,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
             ppu.tick(1, mmu);
             // run serial connection
             serial.tick(1, mmu);
+            // run timer
             timer.tick(1, mmu);
             return 1;
         }
@@ -1457,6 +1458,7 @@ int cpu::tick(mmu &mmu, ppu &ppu) {
     ppu.tick(clocks, mmu);
     // run serial connection
     serial.tick(clocks, mmu);
+    // run timer
     timer.tick(clocks, mmu);
 
     return clocks;
