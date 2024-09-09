@@ -64,10 +64,24 @@ void mmu::write(uint16_t addr, uint8_t val) {
         //printf("Writing to 0xFF05: %02x\n", val);
     }
 
-    if (addr == 0xFF04)  // writing anything to Timer DIV register resets to 0
+    if (addr == 0xFF04)         // writing anything to Timer DIV register resets to 0
         mem[addr] = 0;
+    else if (addr == 0xFF46) {
+        // initial DMA transfer into OAM, this happens instantaneously
+        // nothing else is implemented
+        // https://gbdev.io/pandocs/OAM_DMA_Transfer.html#ff46--dma-oam-dma-source-address--start
+        dma_transfer(val);
+    }
     else
         mem[addr] = val;
+}
+
+void mmu::dma_transfer(uint8_t source) {
+    uint16_t source_address = source * 0x100;
+    uint16_t destination_address = 0xFE00;
+    for (int i = 0x00; i <= 0x9F; i++) {
+        mem[destination_address + i] = mem[source_address + i];
+    }
 }
 
 void mmu::dump_mem(uint16_t addr, uint16_t bytes) {

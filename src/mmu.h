@@ -28,6 +28,8 @@ public:
     void dump_mem(uint16_t addr, uint16_t bytes);
 private:
     uint8_t mem[MEMSIZE]{};
+
+    void dma_transfer(uint8_t source);
 };
 
 
